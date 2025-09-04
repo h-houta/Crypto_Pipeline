@@ -21,7 +21,8 @@ class ConsumerConfig(BaseSettings):
     postgres_port: int = 5434
     postgres_database: str = "crypto_db"
     postgres_user: str = "crypto_user"
-    postgres_password: str = "cryptopass123"
+    # Never hardcode secrets; expect from environment/.env
+    postgres_password: str = ""
 
     # Consumer Settings
     batch_size: int = 100

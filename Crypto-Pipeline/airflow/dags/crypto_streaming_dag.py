@@ -46,7 +46,7 @@ def get_pg_connection():
     port = int(os.getenv("POSTGRES_PORT", "5434"))
     database = os.getenv("POSTGRES_DATABASE", "crypto_db")
     user = os.getenv("POSTGRES_USER", "crypto_user")
-    password = os.getenv("POSTGRES_PASSWORD", "cryptopass123")
+    password = os.getenv("POSTGRES_PASSWORD", "")
 
     # Ensure psycopg2 is available before attempting direct connection
     if psycopg2 is None:
@@ -158,7 +158,7 @@ def start_service(service_name):
                 "-e",
                 "POSTGRES_USER=crypto_user",
                 "-e",
-                "POSTGRES_PASSWORD=cryptopass123",
+                "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}",
                 "crypto-consumer:latest",
             ]
         else:

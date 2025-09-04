@@ -55,7 +55,7 @@ class ThroughputMonitor:
                 port=self.config.get("postgres_port", 5432),
                 database=self.config.get("postgres_db", "crypto_db"),
                 user=self.config.get("postgres_user", "crypto_user"),
-                password=self.config.get("postgres_password", "cryptopass123"),
+                password=self.config.get("postgres_password", ""),
                 cursor_factory=RealDictCursor,
             )
             # Avoid transaction-aborted states on read-only metrics queries
@@ -491,7 +491,7 @@ def main():
         "postgres_port": int(os.getenv("POSTGRES_PORT", "5434")),
         "postgres_db": os.getenv("POSTGRES_DB", "crypto_db"),
         "postgres_user": os.getenv("POSTGRES_USER", "crypto_user"),
-        "postgres_password": os.getenv("POSTGRES_PASSWORD", "cryptopass123"),
+        "postgres_password": os.getenv("POSTGRES_PASSWORD", ""),
         "kafka_bootstrap_servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:19092"),
         "kafka_topic": os.getenv("KAFKA_TOPIC", "crypto_prices"),
         "grafana_webhook": os.getenv("GRAFANA_WEBHOOK_URL"),

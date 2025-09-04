@@ -5,7 +5,7 @@ crypto_analytics:
       type: postgres
       host: localhost
       user: crypto_user
-      password: cryptopass123
+      password: "{{ env_var('DBT_POSTGRES_PASSWORD') }}"
       port: 5434
       dbname: crypto_db
       schema: public
@@ -16,7 +16,7 @@ crypto_analytics:
       type: postgres
       host: "{{ env_var('DBT_POSTGRES_HOST', 'localhost') }}"
       user: "{{ env_var('DBT_POSTGRES_USER', 'crypto_user') }}"
-      password: "{{ env_var('DBT_POSTGRES_PASSWORD', 'cryptopass123') }}"
+      password: "{{ env_var('DBT_POSTGRES_PASSWORD') }}"
       port: "{{ env_var('DBT_POSTGRES_PORT', '5434') | int }}"
       dbname: "{{ env_var('DBT_POSTGRES_DB', 'crypto_db') }}"
       schema: "{{ env_var('DBT_POSTGRES_SCHEMA', 'public') }}"

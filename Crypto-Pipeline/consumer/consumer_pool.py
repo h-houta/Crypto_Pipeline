@@ -102,7 +102,7 @@ class RoundRobinConsumer:
                     port=self.config.get("postgres_port", 5432),
                     database=self.config.get("postgres_db", "crypto_db"),
                     user=self.config.get("postgres_user", "crypto_user"),
-                    password=self.config.get("postgres_password", "cryptopass123"),
+                    password=self.config.get("postgres_password", ""),
                     cursor_factory=RealDictCursor,
                     connect_timeout=10,
                 )
