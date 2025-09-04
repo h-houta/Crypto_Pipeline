@@ -1,0 +1,12 @@
+# Consumer Service Requirements
+# Inherits from main requirements.txt
+
+# All core dependencies are in main requirements.txt:
+# - confluent-kafka==2.3.0
+# - psycopg2-binary==2.9.9
+# - pydantic==2.5.3
+# - pydantic-settings==2.1.0
+# - python-dotenv==1.0.0
+
+# No additional consumer-specific dependencies needed
+# Install with: pip install -r ../requirements.txt

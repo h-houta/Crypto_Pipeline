@@ -1,0 +1,17 @@
+# Airflow Requirements
+# Component-specific dependencies only
+
+# Airflow Core (not in main requirements)
+apache-airflow==2.8.1
+
+# Airflow Providers
+apache-airflow-providers-docker==3.8.0
+apache-airflow-providers-postgres==5.7.1
+
+# Note: All other dependencies (Kafka, PostgreSQL, pandas, numpy)
+# are already in main requirements.txt with compatible versions. DBT is
+# intentionally excluded from the root and installed only in dbt_crypto.
+#
+# Install with:
+# pip install -r ../requirements.txt
+# pip3 install -r requirements.txt

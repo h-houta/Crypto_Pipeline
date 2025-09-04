@@ -1,0 +1,26 @@
+crypto_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: localhost
+      user: crypto_user
+      password: cryptopass123
+      port: 5434
+      dbname: crypto_db
+      schema: public
+      threads: 4
+      keepalives_idle: 0
+
+    prod:
+      type: postgres
+      host: "{{ env_var('DBT_POSTGRES_HOST', 'localhost') }}"
+      user: "{{ env_var('DBT_POSTGRES_USER', 'crypto_user') }}"
+      password: "{{ env_var('DBT_POSTGRES_PASSWORD', 'cryptopass123') }}"
+      port: "{{ env_var('DBT_POSTGRES_PORT', '5434') | int }}"
+      dbname: "{{ env_var('DBT_POSTGRES_DB', 'crypto_db') }}"
+      schema: "{{ env_var('DBT_POSTGRES_SCHEMA', 'public') }}"
+      threads: 4
+      keepalives_idle: 0
+
+

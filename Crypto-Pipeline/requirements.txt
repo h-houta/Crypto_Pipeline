@@ -1,0 +1,167 @@
+# Crypto Pipeline - Main Requirements
+# Python 3.11+ recommended for ARM64 Mac compatibility
+# Last updated: 2024
+
+# ==============================================================================
+# CORE DEPENDENCIES
+# ==============================================================================
+
+# Kafka
+confluent-kafka==2.3.0          # ARM64 compatible with librdkafka
+aiokafka==0.10.0               # Alternative async Kafka client
+kafka-python-ng==2.2.0         # For testing
+
+# PostgreSQL
+psycopg2-binary==2.9.9         # ARM64 pre-built wheels
+asyncpg==0.30.0                # Async PostgreSQL driver
+sqlalchemy==1.4.49
+
+# HTTP Clients
+httpx==0.26.0
+aiohttp==3.9.5
+requests==2.31.0
+
+# ==============================================================================
+# DATA PROCESSING & ANALYTICS
+# ==============================================================================
+
+# Data Processing
+pandas==2.2.0                  # Python 3.13 compatible
+numpy==1.26.3                  # ARM64 optimized with Accelerate framework
+pyarrow==14.0.2               # ARM64 native
+
+# Time Series & Analytics
+statsmodels==0.14.1
+prophet==1.1.5                # May need Rosetta 2
+scikit-learn==1.3.2
+
+# ==============================================================================
+# CONFIGURATION & UTILITIES
+# ==============================================================================
+
+# Configuration Management
+python-dotenv==1.0.0
+pydantic==2.5.3
+pydantic-settings==2.1.0      # Standardized version
+configparser==6.0.0
+packaging==23.2
+sqlparse<0.5,>=0.2.3
+
+# CLI & Automation
+click==8.1.7
+typer==0.9.0
+rich==13.7.0                  # Better console output
+tabulate==0.9.0
+tqdm==4.66.1
+
+# Date/Time
+python-dateutil==2.8.2
+pytz==2023.3.post1
+pendulum==3.0.0
+
+# JSON Processing
+orjson==3.9.10               # Fast JSON, ARM64 optimized
+ujson==5.9.0
+
+# YAML
+pyyaml==6.0.1
+
+# ==============================================================================
+# COMPAT SHIMS FOR TRANSITIVES
+# ==============================================================================
+
+# Satisfy grpcio-status >=1.74.0 requirements
+protobuf>=3.20,<5
+
+# ==============================================================================
+# MONITORING & OBSERVABILITY
+# ==============================================================================
+
+# Metrics & Monitoring
+prometheus-client==0.19.0
+prometheus-async==22.2.0
+statsd==4.0.1
+
+# Logging
+structlog==24.1.0
+colorama==0.4.6
+
+# Tracing
+opentelemetry-api==1.22.0
+opentelemetry-sdk==1.22.0
+opentelemetry-exporter-otlp-proto-grpc==1.22.0
+opentelemetry-instrumentation-kafka-python==0.43b0
+jaeger-client==4.8.0
+
+# Alerting
+slack-sdk==3.27.1            # Standardized to latest version
+twilio==8.11.0
+sendgrid==6.11.0
+
+# ==============================================================================
+# DEVELOPMENT & TESTING
+# ==============================================================================
+
+# Testing Framework
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-mock==3.12.0
+pytest-cov==4.1.0
+pytest-timeout==2.2.0
+pytest-xdist==3.5.0          # Parallel testing
+pytest-benchmark==4.0.0
+
+# Testing Utilities
+faker==22.0.0
+freezegun==1.4.0             # Time mocking
+factory-boy==3.3.0
+responses==0.24.1
+pytest-httpx==0.28.0
+
+# Code Quality
+black==23.12.1
+flake8==7.0.0
+mypy==1.8.0
+isort==5.13.2
+pre-commit==3.6.0
+coverage==7.4.0
+pylint==3.3.8
+
+# Development Tools
+memory-profiler==0.61.0
+py-spy==0.3.14              # ARM64 profiler
+
+# ==============================================================================
+# OPTIONAL COMPONENTS
+# ==============================================================================
+
+# Airflow (install separately if needed)
+# apache-airflow==2.8.1
+# apache-airflow-providers-docker==3.8.0
+# apache-airflow-providers-postgres==5.7.1
+
+# Database Management
+alembic==1.13.1             # Database migrations
+
+# Infrastructure Testing
+testcontainers[kafka]==3.7.1
+pytest-postgresql==5.0.0
+
+# Load Testing
+locust==2.20.1              # ARM64 compatible
+
+# Dashboarding moved to monitoring/requirements.txt
+
+# Anomaly Detection
+pyod==1.1.2
+
+# Search & Analytics
+elasticsearch==8.11.1
+
+# ==============================================================================
+# NOTES
+# ==============================================================================
+# 1. For production deployments, use Docker images with pinned versions
+# 2. Some packages may require Rosetta 2 on ARM64 Macs (e.g., prophet)
+# 3. Component-specific requirements should import from this base file
+# 4. Run: pip install --upgrade pip setuptools wheel before installing

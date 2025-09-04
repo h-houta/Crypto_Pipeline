@@ -1,0 +1,24 @@
+# DBT Project Requirements
+# Component-specific dependencies only
+
+# Core DBT (kept separate from root requirements)
+dbt-core==1.7.4
+dbt-postgres==1.7.4
+
+# DBT Extensions are managed via packages.yml (use `dbt deps`)
+
+# Additional DBT adapters (optional)
+# dbt-redshift==1.7.1    # If using Redshift
+# dbt-bigquery==1.7.2    # If using BigQuery
+
+# DBT Testing
+# Use a version available on PyPI
+pytest-dbt-adapter==0.6.0
+
+# Documentation (optional)
+mkdocs==1.5.3
+mkdocs-material==9.5.3
+
+# Install with:
+# pip install -r ../requirements.txt   # core libs (no DBT)
+# pip install -r requirements.txt      # DBT-specific deps for this project

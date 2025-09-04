@@ -1,0 +1,27 @@
+# Ignore everything except what the image needs
+*
+!pyproject.toml
+!poetry.lock
+!producer
+!producer/**
+!consumer
+!consumer/**
+!alerting
+!alerting/**
+!monitoring
+!monitoring/**
+!docker
+!docker/**
+
+# Common ignores
+**/.git/**
+**/__pycache__/**
+**/.mypy_cache/**
+**/.pytest_cache/**
+**/.venv/**
+**/venv/**
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.DS_Store
+

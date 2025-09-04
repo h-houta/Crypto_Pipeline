@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deployment Architecture - Docker & Kubernetes</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f5f5f5;
+      }
+      h1 {
+        color: #333;
+        border-bottom: 2px solid #9c27b0;
+        padding-bottom: 10px;
+      }
+      .mermaid {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin: 20px 0;
+      }
+      .description {
+        background-color: white;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+      }
+      th {
+        background-color: #9c27b0;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Deployment Architecture - Docker & Kubernetes</h1>
+
+    <div class="description">
+      <h2>Current Docker Deployment</h2>
+      <p>
+        The pipeline currently runs on Docker Compose with the following
+        services:
+      </p>
+      <ul>
+        <li>Redpanda (Kafka) - Message broker</li>
+        <li>TimescaleDB (PostgreSQL) - Time-series database</li>
+        <li>Producer & Consumer services</li>
+        <li>Airflow for orchestration</li>
+        <li>Monitoring stack (Prometheus + Grafana)</li>
+      </ul>
+    </div>
+
+    <div class="mermaid">
+      graph TB subgraph "Docker Compose Deployment" subgraph "Network:
+      crypto-network" DC_KAFKA["🔴 Redpanda<br />Container: redpanda<br />Image:
+      redpandadata/redpanda<br />Ports: 9092, 19092"] DC_PG["🐘 TimescaleDB<br />Container:
+      postgres<br />Image: timescale/timescaledb<br />Port: 5432"] DC_PROD["📡
+      Producer<br />Container: crypto-producer<br />Build: ./producer<br />Restart:
+      always"] DC_CONS["💾 Consumer<br />Container: crypto-consumer<br />Build:
+      ./consumer<br />Restart: always"] DC_ALERT["🚨 Alert Consumer<br />Container:
+      alert-consumer<br />Build: ./alerting<br />Restart: always"] DC_GRAF["📊
+      Grafana<br />Container: grafana<br />Port: 3000"] DC_PROM["📈
+      Prometheus<br />Container: prometheus<br />Port: 9090"] end DC_VOL["📁
+      Volumes<br />• redpanda-data<br />• postgres-data<br />• grafana-data<br />•
+      prometheus-data"] end DC_KAFKA -.-> DC_VOL DC_PG -.-> DC_VOL DC_GRAF -.->
+      DC_VOL DC_PROM -.-> DC_VOL style DC_KAFKA fill:#ffebee style DC_PG
+      fill:#e3f2fd style DC_PROD fill:#fff3e0 style DC_CONS fill:#f3e5f5 style
+      DC_ALERT fill:#fce4ec style DC_GRAF fill:#e8f5e9 style DC_PROM
+      fill:#fff9c4
+    </div>
+
+    <div class="mermaid">
+      graph TB subgraph "Kubernetes Deployment Architecture" subgraph
+      "Namespace: crypto-pipeline" subgraph "StatefulSets" K_KAFKA["🔴 Kafka
+      StatefulSet<br />Replicas: 3<br />Storage: 100Gi SSD<br />Anti-affinity
+      rules"] K_PG["🐘 PostgreSQL StatefulSet<br />Replicas: 1 (+ 2 read)<br />Storage:
+      500Gi SSD<br />Backup CronJob"] end subgraph "Deployments" K_PROD["📡
+      Producer Deployment<br />Replicas: 3-10 (HPA)<br />CPU: 1-2 cores<br />Memory:
+      2-4Gi"] K_CONS["💾 Consumer Deployment<br />Replicas: 5-20 (HPA)<br />CPU:
+      2-4 cores<br />Memory: 4-8Gi"] K_ALERT["🚨 Alert Deployment<br />Replicas:
+      2<br />CPU: 0.5 cores<br />Memory: 1Gi"] K_AIR["🔄 Airflow<br />Scheduler:
+      2 replicas<br />Webserver: 2 replicas<br />Workers: 3-10 (KEDA)"] end
+      subgraph "Services" K_SVC_KAFKA["Kafka Service<br />Type: ClusterIP<br />Headless
+      for discovery"] K_SVC_PG["PostgreSQL Service<br />Type: ClusterIP<br />+
+      Read-only service"] K_SVC_AIR["Airflow Service<br />Type: LoadBalancer<br />Ingress
+      configured"] end subgraph "ConfigMaps & Secrets" K_CM["ConfigMaps<br />•
+      app-config<br />• kafka-config<br />• db-config<br />• airflow-config"]
+      K_SEC["Secrets<br />• db-credentials<br />• api-keys<br />• tls-certs<br />•
+      smtp-config"] end subgraph "Monitoring" K_PROM["Prometheus<br />Operator<br />ServiceMonitors<br />PrometheusRules"]
+      K_GRAF["Grafana<br />Deployment<br />Dashboards<br />Datasources"] end
+      subgraph "Storage" K_PVC["PersistentVolumes<br />• kafka-data-pvc<br />•
+      postgres-data-pvc<br />• airflow-logs-pvc<br />StorageClass: fast-ssd"]
+      end end subgraph "Ingress Controller" K_ING["NGINX Ingress<br />•
+      airflow.crypto.io<br />• grafana.crypto.io<br />• api.crypto.io<br />TLS
+      termination"] end subgraph "External Resources" K_ECR["Container
+      Registry<br />• ECR/DockerHub<br />• Image scanning<br />• Vulnerability
+      checks"] K_S3["Object Storage<br />• S3/MinIO<br />• Backups<br />•
+      Archives"] K_SECRETS["External Secrets<br />• AWS Secrets Manager<br />•
+      HashiCorp Vault<br />• Sealed Secrets"] end end K_KAFKA --> K_SVC_KAFKA
+      K_PG --> K_SVC_PG K_AIR --> K_SVC_AIR K_PROD --> K_CM K_CONS --> K_CM
+      K_ALERT --> K_CM K_AIR --> K_CM K_PROD --> K_SEC K_CONS --> K_SEC K_PG -->
+      K_SEC K_KAFKA --> K_PVC K_PG --> K_PVC K_AIR --> K_PVC K_SVC_AIR --> K_ING
+      K_GRAF --> K_ING K_ING --> K_ECR K_PG --> K_S3 K_SEC --> K_SECRETS style
+      K_KAFKA fill:#ffebee style K_PG fill:#e3f2fd style K_PROD fill:#fff3e0
+      style K_CONS fill:#f3e5f5 style K_PROM fill:#fff9c4 style K_GRAF
+      fill:#e8f5e9
+    </div>
+
+    <div class="description">
+      <h2>Kubernetes Resources Configuration</h2>
+      <table>
+        <tr>
+          <th>Component</th>
+          <th>Resource Type</th>
+          <th>Replicas</th>
+          <th>CPU</th>
+          <th>Memory</th>
+          <th>Storage</th>
+        </tr>
+        <tr>
+          <td>Kafka/Redpanda</td>
+          <td>StatefulSet</td>
+          <td>3</td>
+          <td>2-4 cores</td>
+          <td>8-16 Gi</td>
+          <td>100 Gi SSD</td>
+        </tr>
+        <tr>
+          <td>PostgreSQL Primary</td>
+          <td>StatefulSet</td>
+          <td>1</td>
+          <td>4-8 cores</td>
+          <td>16-32 Gi</td>
+          <td>500 Gi SSD</td>
+        </tr>
+        <tr>
+          <td>PostgreSQL Replicas</td>
+          <td>StatefulSet</td>
+          <td>2</td>
+          <td>2-4 cores</td>
+          <td>8-16 Gi</td>
+          <td>500 Gi SSD</td>
+        </tr>
+        <tr>
+          <td>Producer</td>
+          <td>Deployment</td>
+          <td>3-10 (HPA)</td>
+          <td>1-2 cores</td>
+          <td>2-4 Gi</td>
+          <td>-</td>
+        </tr>
+        <tr>
+          <td>Consumer</td>
+          <td>Deployment</td>
+          <td>5-20 (HPA)</td>
+          <td>2-4 cores</td>
+          <td>4-8 Gi</td>
+          <td>-</td>
+        </tr>
+        <tr>
+          <td>Airflow Scheduler</td>
+          <td>Deployment</td>
+          <td>2</td>
+          <td>2 cores</td>
+          <td>4 Gi</td>
+          <td>10 Gi</td>
+        </tr>
+        <tr>
+          <td>Airflow Workers</td>
+          <td>Deployment</td>
+          <td>3-10 (KEDA)</td>
+          <td>2 cores</td>
+          <td>4 Gi</td>
+          <td>-</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="mermaid">
+      graph LR subgraph "CI/CD Pipeline" GIT["Git Push"] --> CI["GitHub
+      Actions<br />• Lint & Test<br />• Security Scan<br />• Build Images"] CI
+      --> REG["Push to Registry<br />• Tag: latest<br />• Tag: Beltone_V2.2.3<br />•
+      Tag: commit-sha"] REG --> CD["ArgoCD/Flux<br />• Sync manifests<br />•
+      Progressive delivery<br />• Auto-rollback"] CD --> K8S["Deploy to K8s<br />•
+      Dev → Stage → Prod<br />• Blue-Green<br />• Canary: 10% → 50% → 100%"] end
+      style GIT fill:#f0f0f0 style CI fill:#fff3e0 style REG fill:#e3f2fd style
+      CD fill:#e8f5e9 style K8S fill:#f3e5f5
+    </div>
+
+    <script>
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "default",
+        themeVariables: {
+          primaryColor: "#9C27B0",
+          primaryTextColor: "#fff",
+          primaryBorderColor: "#7B1FA2",
+          lineColor: "#333",
+        },
+      });
+    </script>
+  </body>
+</html>

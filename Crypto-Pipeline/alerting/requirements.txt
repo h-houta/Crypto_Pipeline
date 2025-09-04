@@ -1,0 +1,5 @@
+# Alert Consumer Python Dependencies
+# Note: The Dockerfile installs confluent-kafka separately with system libs.
+
+# Load environment variables from .env
+python-dotenv==1.0.0

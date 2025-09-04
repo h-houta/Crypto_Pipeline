@@ -1,0 +1,32 @@
+[MASTER]
+# Use multiple processes to speed up Pylint
+jobs=0
+
+# Python code to execute before analysis
+init-hook='import sys; sys.path.append(".")'
+
+[MESSAGES CONTROL]
+# Disable specific warnings that might be too noisy
+disable=C0111,C0103,R0903,W0621,W0611
+
+[REPORTS]
+# Set the output format
+output-format=text
+
+# Include a brief explanation of the error
+msg-template={path}:{line}: [{msg_id}({symbol}), {obj}] {msg}
+
+[FORMAT]
+# Maximum number of characters on a single line
+max-line-length=120
+
+# Maximum number of lines in a module
+max-module-lines=1000
+
+[BASIC]
+# Regular expression which should only match function or class names
+good-names=i,j,k,ex,Run,_,id,db
+
+[MISCELLANEOUS]
+# List of note tags to take into consideration
+notes=

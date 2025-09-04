@@ -1,0 +1,209 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Raw crypto price data from Kafka consumer
+    database: crypto_db
+    schema: public
+    tables:
+      - name: raw_crypto_prices_log
+        description: Raw cryptocurrency price feed data (append-only log)
+        columns:
+          - name: time
+            description: Timestamp of the price update
+            tests:
+              - not_null
+          - name: symbol
+            description: Cryptocurrency trading pair symbol (e.g., BTC-USD)
+            tests:
+              - not_null
+          - name: price
+            description: Price of the cryptocurrency
+            tests:
+              - not_null
+          - name: volume
+            description: Trading volume
+          - name: bid
+            description: Current bid price
+          - name: ask
+            description: Current ask price
+          - name: exchange
+            description: Exchange source (default coinbase)
+          - name: inserted_at
+            description: Timestamp when record was inserted into database
+
+models:
+  - name: stg_crypto_prices
+    description: Staging layer for crypto prices with basic filtering and calculated metrics
+    columns:
+      - name: time
+        description: Timestamp of the price update
+        tests:
+          - not_null
+      - name: symbol
+        description: Cryptocurrency trading pair symbol
+        tests:
+          - not_null
+      - name: price
+        description: Validated price (filtered for > 0)
+        tests:
+          - not_null
+      - name: volume
+        description: Trading volume
+      - name: bid
+        description: Current bid price
+      - name: ask
+        description: Current ask price
+      - name: exchange
+        description: Exchange source
+      - name: inserted_at
+        description: Database insertion timestamp
+      - name: spread
+        description: Calculated spread (ask - bid)
+      - name: spread_pct
+        description: Spread as percentage of ask price
+
+  - name: latest_crypto_prices
+    description: Most recent price for each cryptocurrency pair with 24h statistics and spread analysis
+    columns:
+      - name: symbol
+        description: Cryptocurrency trading pair symbol
+        tests:
+          - not_null
+          - unique
+      - name: latest_price
+        description: Most recent price
+        tests:
+          - not_null
+      - name: latest_volume
+        description: Volume from most recent update
+      - name: latest_bid
+        description: Most recent bid price
+      - name: latest_ask
+        description: Most recent ask price
+      - name: spread
+        description: Absolute spread (ask - bid)
+      - name: spread_percentage
+        description: Spread as percentage of ask price
+      - name: price_24h_ago
+        description: Price from 24 hours ago
+      - name: price_change_24h
+        description: Absolute price change in last 24h
+      - name: price_change_pct_24h
+        description: Percentage price change in last 24h
+      - name: min_price_24h
+        description: Minimum price in last 24h
+      - name: max_price_24h
+        description: Maximum price in last 24h
+      - name: avg_price_24h
+        description: Average price in last 24h
+      - name: volume_24h
+        description: Total volume in last 24h
+      - name: updates_24h
+        description: Number of price updates in last 24h
+      - name: exchange
+        description: Exchange source
+      - name: last_updated
+        description: Timestamp of the latest price update
+        tests:
+          - not_null
+      - name: last_inserted_at
+        description: Database insertion timestamp of latest update
+      - name: refreshed_at
+        description: When this view was last refreshed
+
+  - name: price_summary_15min
+    description: 15-minute aggregated price statistics per trading pair with enhanced metrics
+    columns:
+      - name: window_id
+        description: Unique identifier for each window-symbol combination
+        tests:
+          - not_null
+          - unique
+      - name: window_start
+        description: Start of the 15-minute window
+        tests:
+          - not_null
+      - name: window_end
+        description: End of the 15-minute window
+        tests:
+          - not_null
+      - name: symbol
+        description: Cryptocurrency trading pair symbol
+        tests:
+          - not_null
+      - name: min_price
+        description: Minimum price in the window
+      - name: max_price
+        description: Maximum price in the window
+      - name: avg_price
+        description: Average price in the window
+      - name: price_stddev
+        description: Standard deviation of prices in the window
+      - name: total_volume
+        description: Total trading volume in the window
+      - name: avg_volume
+        description: Average trading volume in the window
+      - name: avg_bid
+        description: Average bid price in the window
+      - name: avg_ask
+        description: Average ask price in the window
+      - name: avg_spread
+        description: Average spread in the window
+      - name: avg_spread_pct
+        description: Average spread percentage in the window
+      - name: max_spread
+        description: Maximum spread in the window
+      - name: update_count
+        description: Number of price updates in the window
+      - name: unique_seconds_with_updates
+        description: Count of unique seconds that had price updates
+      - name: update_distribution_pct
+        description: Percentage of unique seconds vs total updates
+      - name: price_range
+        description: Absolute price range (max - min)
+      - name: price_range_percentage
+        description: Price range as percentage of min price
+      - name: coefficient_of_variation
+        description: Volatility measure (stddev/avg * 100)
+      - name: first_price
+        description: First price in the window
+      - name: last_price
+        description: Last price in the window
+      - name: period_return_percentage
+        description: Percentage change from first to last price in the window
+      - name: activity_level
+        description: Trading activity level (Very Low to Very High)
+      - name: updated_at
+        description: When this record was last updated
+
+  - name: crypto_ohlcv_15min
+    description: 15-minute OHLCV (Open-High-Low-Close-Volume) candlestick data
+    columns:
+      - name: period_key
+        description: Surrogate key for each period-symbol combination
+        tests:
+          - not_null
+          - unique
+      - name: period_start
+        description: Start of the 15-minute period
+        tests:
+          - not_null
+      - name: symbol
+        description: Cryptocurrency trading pair symbol
+        tests:
+          - not_null
+      - name: open
+        description: Opening price of the period
+      - name: high
+        description: Highest price in the period
+      - name: low
+        description: Lowest price in the period
+      - name: close
+        description: Closing price of the period
+      - name: total_volume
+        description: Total trading volume in the period
+      - name: trade_count
+        description: Number of trades in the period
+      - name: updated_at
+        description: When this record was last updated

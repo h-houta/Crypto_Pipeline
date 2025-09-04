@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Handling and Recovery Flows - Crypto Pipeline</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .mermaid {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .description {
+            background-color: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Error Handling and Recovery Flows</h1>
+
+    <div class="description">
+        <h2>Overview</h2>
+        <p>This diagram illustrates the comprehensive error handling and recovery mechanisms implemented across the crypto data pipeline.</p>
+        <ul>
+            <li><strong>Circuit Breakers:</strong> Prevent cascade failures</li>
+            <li><strong>Retry Logic:</strong> Exponential backoff with jitter</li>
+            <li><strong>Dead Letter Queues:</strong> Capture failed messages</li>
+            <li><strong>Health Checks:</strong> Proactive monitoring</li>
+            <li><strong>Auto-recovery:</strong> Self-healing mechanisms</li>
+        </ul>
+    </div>
+
+    <div class="mermaid">
+stateDiagram-v2
+    [*] --> Healthy: System Start
+
+    state Healthy {
+        [*] --> Running
+        Running --> Monitoring: Continuous
+        Monitoring --> Running: All OK
+    }
+
+    state "API Errors" as api_errors {
+        [*] --> HTTPError
+        HTTPError --> CheckErrorCode
+
+        state CheckErrorCode <<choice>>
+        CheckErrorCode --> Retry: 429/503
+        CheckErrorCode --> Alert: 401/403
+        CheckErrorCode --> SkipRecord: 404
+
+        Retry --> ExponentialBackoff
+        ExponentialBackoff --> RetryRequest
+        RetryRequest --> Success: Recovered
+        RetryRequest --> MaxRetriesExceeded: Failed
+
+        MaxRetriesExceeded --> CircuitBreaker
+        CircuitBreaker --> WaitCooldown
+        WaitCooldown --> HalfOpen
+        HalfOpen --> Running: Success
+        HalfOpen --> CircuitBreaker: Failed
+    }
+
+    state "Kafka Errors" as kafka_errors {
+        [*] --> ProducerError
+        ProducerError --> CheckBuffer
+
+        CheckBuffer --> BufferMessages: Space Available
+        CheckBuffer --> DropOldest: Buffer Full
+
+        BufferMessages --> RetryProduce
+        RetryProduce --> KafkaHealthCheck
+
+        state KafkaHealthCheck <<choice>>
+        KafkaHealthCheck --> ReconnectBroker: Broker Down
+        KafkaHealthCheck --> ResendMessages: Broker OK
+
+        ReconnectBroker --> DiscoverBrokers
+        DiscoverBrokers --> ResendMessages
+        ResendMessages --> Success: Delivered
+        ResendMessages --> DeadLetterQueue: Failed
+    }
+
+    state "Database Errors" as db_errors {
+        [*] --> ConnectionError
+        ConnectionError --> CheckConnectionPool
+
+        CheckConnectionPool --> CreateNewConnection: Pool Available
+        CheckConnectionPool --> WaitForConnection: Pool Exhausted
+
+        CreateNewConnection --> RetryTransaction
+        WaitForConnection --> RetryTransaction
+
+        RetryTransaction --> ValidateData
+        ValidateData --> CommitTransaction: Valid
+        ValidateData --> RollbackTransaction: Invalid
+
+        CommitTransaction --> Success
+        RollbackTransaction --> LogError
+        LogError --> ManualIntervention
+    }
+
+    state "Consumer Errors" as consumer_errors {
+        [*] --> ConsumerLag
+        ConsumerLag --> CheckLagThreshold
+
+        state CheckLagThreshold <<choice>>
+        CheckLagThreshold --> ScaleConsumers: High Lag
+        CheckLagThreshold --> Normal: Acceptable
+
+        ScaleConsumers --> AddConsumerInstance
+        AddConsumerInstance --> RebalancePartitions
+        RebalancePartitions --> MonitorProgress
+
+        MonitorProgress --> Success: Lag Reduced
+        MonitorProgress --> AlertOps: Still High
+    }
+
+    state "Recovery Procedures" as recovery {
+        [*] --> DetectFailure
+        DetectFailure --> IdentifyComponent
+
+        IdentifyComponent --> RestartService: Service Crash
+        IdentifyComponent --> ReplayMessages: Data Loss
+        IdentifyComponent --> FailoverReplica: Node Failure
+
+        RestartService --> HealthCheck
+        ReplayMessages --> ValidateCheckpoint
+        FailoverReplica --> PromoteStandby
+
+        HealthCheck --> Recovered: Passed
+        ValidateCheckpoint --> Recovered: Complete
+        PromoteStandby --> Recovered: Active
+    }
+
+    Healthy --> api_errors: API Issues
+    Healthy --> kafka_errors: Kafka Issues
+    Healthy --> db_errors: Database Issues
+    Healthy --> consumer_errors: Consumer Issues
+
+    api_errors --> recovery: Trigger Recovery
+    kafka_errors --> recovery: Trigger Recovery
+    db_errors --> recovery: Trigger Recovery
+    consumer_errors --> recovery: Trigger Recovery
+
+    recovery --> Healthy: System Recovered
+    recovery --> Degraded: Partial Recovery
+
+    state Degraded {
+        [*] --> LimitedOperation
+        LimitedOperation --> ManualReview
+        ManualReview --> FullRecovery
+        FullRecovery --> Healthy
+    }
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#4CAF50',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#2E7D32',
+                lineColor: '#333',
+                secondaryColor: '#FFC107',
+                tertiaryColor: '#FF5722'
+            }
+        });
+    </script>
+</body>
+</html>

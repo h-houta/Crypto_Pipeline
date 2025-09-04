@@ -1,0 +1,17 @@
+# Monitoring & Alerting Requirements
+# Component-specific dependencies only
+
+# Additional Database Support
+sqlalchemy-utils==0.41.1
+
+# Note: Core monitoring dependencies are in main requirements.txt, but UI/dashboarding
+# packages are installed here to avoid conflicts in the root stack.
+
+# Dashboarding (UI)
+streamlit==1.29.0
+plotly==5.18.0
+dash==2.14.2
+
+# Install with:
+# pip install -r ../requirements.txt
+# pip install -r requirements.txt
