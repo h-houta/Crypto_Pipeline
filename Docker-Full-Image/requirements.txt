@@ -1,0 +1,95 @@
+# Docker Full Image - Core Dependencies
+# This file contains the essential dependencies for the full image
+# For complete dependencies, see the main requirements.txt
+
+# ==============================================================================
+# CORE KAFKA & MESSAGING
+# ==============================================================================
+confluent-kafka==2.3.0          # ARM64 compatible with librdkafka
+aiokafka==0.10.0               # Alternative async Kafka client
+
+# ==============================================================================
+# CORE HTTP CLIENTS
+# ==============================================================================
+httpx==0.26.0                  # Modern HTTP client
+aiohttp==3.9.5                  # Async HTTP client
+requests==2.31.0                # Standard HTTP library
+
+# ==============================================================================
+# CORE CONFIGURATION & VALIDATION
+# ==============================================================================
+pydantic==2.5.3                 # Data validation
+pydantic-settings==2.1.0        # Settings management
+python-dotenv==1.0.0            # Environment variable loading
+configparser==6.0.0             # Configuration file parsing
+
+# ==============================================================================
+# CORE MONITORING & METRICS
+# ==============================================================================
+prometheus-client==0.19.0       # Prometheus metrics
+prometheus-async==22.2.0        # Async Prometheus client
+statsd==4.0.1                   # StatsD metrics
+
+# ==============================================================================
+# CORE DATABASE & STORAGE
+# ==============================================================================
+psycopg2-binary==2.9.9          # PostgreSQL adapter (ARM64 pre-built)
+asyncpg==0.30.0                 # Async PostgreSQL driver
+sqlalchemy==2.0.25              # SQL toolkit and ORM
+
+# ==============================================================================
+# CORE DATA PROCESSING
+# ==============================================================================
+pandas==2.2.0                   # Data manipulation and analysis
+numpy==1.26.3                   # Numerical computing (ARM64 optimized)
+pyarrow==14.0.2                 # Fast data processing (ARM64 native)
+
+# ==============================================================================
+# CORE UTILITIES & TOOLS
+# ==============================================================================
+click==8.1.7                    # CLI framework
+structlog==24.1.0               # Structured logging
+colorama==0.4.6                 # Cross-platform colored terminal text
+rich==13.7.0                    # Rich text and formatting
+tabulate==0.9.0                 # Pretty-print tabular data
+tqdm==4.66.1                    # Progress bars
+
+# ==============================================================================
+# CORE DATE/TIME HANDLING
+# ==============================================================================
+python-dateutil==2.8.2          # Date utilities
+pytz==2023.3.post1              # Timezone support
+pendulum==3.0.0                 # Python datetimes made easy
+
+# ==============================================================================
+# CORE JSON PROCESSING
+# ==============================================================================
+orjson==3.9.10                  # Fast JSON (ARM64 optimized)
+ujson==5.9.0                    # Fast JSON implementation
+
+# ==============================================================================
+# CORE YAML PROCESSING
+# ==============================================================================
+pyyaml==6.0.1                   # YAML parser and emitter
+
+# ==============================================================================
+# CORE LOGGING & OBSERVABILITY
+# ==============================================================================
+structlog==24.1.0               # Structured logging
+colorama==0.4.6                 # Terminal colors
+
+# ==============================================================================
+# CORE TESTING SUPPORT
+# ==============================================================================
+pytest==7.4.4                   # Testing framework
+pytest-asyncio==0.23.3          # Async testing support
+
+# ==============================================================================
+# NOTES
+# ==============================================================================
+# 1. This is a subset of the full requirements.txt
+# 2. The full image uses Poetry for dependency management
+# 3. See pyproject.toml for complete dependency specifications
+# 4. Some packages may require Rosetta 2 on ARM64 Macs
+# 5. Run: pip install --upgrade pip setuptools wheel before installing
+

@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+
+# Python venvs
+.venv/
+
+# Bytecode
+__pycache__/
+*.pyc
+
+# DBT build artifacts
+**/dbt_crypto/target/
+**/dbt_crypto/logs/
+
+# Airflow logs and compiled DAGs
+**/airflow/logs/
+**/logs/
+
+# Env files and secrets
+*.env
+**/.env
+**/*.env
+secrets.*
+
+# OS/editor
+*.swp
+.idea/
+.vscode/
+
+

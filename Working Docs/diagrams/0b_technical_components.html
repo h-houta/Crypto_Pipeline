@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Components Architecture - Crypto Pipeline</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #2196F3;
+            padding-bottom: 10px;
+        }
+        .mermaid {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        .description {
+            background-color: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Technical Components Architecture</h1>
+
+    <div class="description">
+        <h2>Detailed Technical Stack</h2>
+        <p>This diagram provides a detailed view of the technical components, their configurations, and interconnections.</p>
+        <ul>
+            <li><strong>Service Configurations:</strong> Ports, resources, and settings</li>
+            <li><strong>Docker Services:</strong> Container specifications</li>
+            <li><strong>Network Architecture:</strong> Internal and external connectivity</li>
+            <li><strong>Monitoring Stack:</strong> Prometheus and Grafana setup</li>
+        </ul>
+    </div>
+
+    <div class="mermaid">
+graph LR
+    %% Styling for different component types
+    classDef external fill:#bbdefb,stroke:#1565c0,stroke-width:2px
+    classDef producer fill:#ffccbc,stroke:#bf360c,stroke-width:2px
+    classDef broker fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef consumer fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef database fill:#d1c4e9,stroke:#512da8,stroke-width:2px
+    classDef transform fill:#b2dfdb,stroke:#00695c,stroke-width:2px
+    classDef orchestrator fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef monitor fill:#ffe0b2,stroke:#e65100,stroke-width:2px
+
+    subgraph "External APIs"
+        COINBASE["Coinbase API<br/>• /products/ticker<br/>• BTC, ETH, SOL, etc.<br/>• 10s polling interval"]:::external
+    end
+
+    subgraph "Producer Service [Docker]"
+        PRODUCER["Python Producer<br/>• Async HTTP client (httpx)<br/>• Confluent Kafka Producer<br/>• Idempotent config<br/>• Batch size: 100<br/>• Linger: 100ms"]:::producer
+    end
+
+    subgraph "Message Broker [Docker]"
+        REDPANDA["Redpanda Cluster<br/>• Port: 9092 (internal)<br/>• Port: 19092 (external)<br/>• Topic: crypto_prices<br/>• Partitions: 3<br/>• Replication: 1<br/>• Retention: 7 days"]:::broker
+
+        CONSOLE["Redpanda Console<br/>• Port: 8080<br/>• Topic monitoring<br/>• Consumer groups"]:::monitor
+    end
+
+    subgraph "Consumer Services [Docker]"
+        CONSUMER1["PostgreSQL Consumer<br/>• Consumer Group: pg-consumer<br/>• Batch size: 500<br/>• Commit interval: 5s<br/>• Exactly-once semantics"]:::consumer
+
+        CONSUMER2["Alert Consumer<br/>• Consumer Group: alert-consumer<br/>• Real-time processing<br/>• Threshold: >10% change<br/>• Window: 5 minutes"]:::consumer
+    end
+
+    subgraph "Data Storage [Docker]"
+        POSTGRES["TimescaleDB/PostgreSQL<br/>• Port: 5434<br/>• Database: crypto_db<br/>• Schema: crypto<br/>• Hypertable: price_data<br/>• Chunk interval: 1 day<br/>• Compression: after 7 days"]:::database
+
+        PGADMIN["pgAdmin 4<br/>• Port: 5050<br/>• Web interface<br/>• Query editor"]:::monitor
+    end
+
+    subgraph "DBT Layer [Docker/Local]"
+        DBT_STAGING["DBT Staging Models<br/>• stg_crypto_prices<br/>• Data type casting<br/>• Null handling<br/>• Deduplication"]:::transform
+
+        DBT_MARTS["DBT Mart Models<br/>• crypto_ohlcv_15min<br/>• latest_crypto_prices<br/>• price_summary_15min<br/>• Incremental refresh"]:::transform
+
+        DBT_TESTS["DBT Tests<br/>• Not null checks<br/>• Unique constraints<br/>• Referential integrity<br/>• Custom assertions"]:::transform
+    end
+
+    subgraph "Airflow [Docker]"
+        SCHEDULER["Airflow Scheduler<br/>• Port: 8081<br/>• Executor: Local<br/>• Parallelism: 32<br/>• DAG folder: /opt/airflow/dags"]:::orchestrator
+
+        WEBSERVER["Airflow Webserver<br/>• Port: 8082<br/>• Authentication: Basic<br/>• UI monitoring"]:::orchestrator
+
+        DAGS["DAG Definitions<br/>• crypto_pipeline (15m)<br/>• crypto_streaming (@hourly)<br/>• crypto_dbt (30m)"]:::orchestrator
+    end
+
+    subgraph "Monitoring Stack [Docker]"
+        PROMETHEUS["Prometheus<br/>• Port: 9090<br/>• Scrape interval: 15s<br/>• Retention: 15 days<br/>• Targets: all services"]:::monitor
+
+        GRAFANA["Grafana<br/>• Port: 3000<br/>• Dashboards: crypto-pipeline<br/>• Alerts configured<br/>• Data sources: Prometheus, PostgreSQL"]:::monitor
+
+        METRICS["Custom Metrics<br/>• Message throughput<br/>• Processing latency<br/>• Error rates<br/>• Data freshness"]:::monitor
+    end
+
+    %% Connections
+    COINBASE -->|"HTTP GET"| PRODUCER
+    PRODUCER -->|"Produce"| REDPANDA
+    REDPANDA -->|"Consume"| CONSUMER1
+    REDPANDA -->|"Consume"| CONSUMER2
+    CONSUMER1 -->|"INSERT"| POSTGRES
+    POSTGRES -->|"SELECT"| DBT_STAGING
+    DBT_STAGING -->|"Transform"| DBT_MARTS
+    DBT_MARTS -->|"Test"| DBT_TESTS
+
+    SCHEDULER -->|"Execute"| DAGS
+    DAGS -->|"Orchestrate"| PRODUCER
+    DAGS -->|"Orchestrate"| CONSUMER1
+    DAGS -->|"Orchestrate"| DBT_STAGING
+
+    PRODUCER -->|"Metrics"| PROMETHEUS
+    CONSUMER1 -->|"Metrics"| PROMETHEUS
+    POSTGRES -->|"Metrics"| PROMETHEUS
+    PROMETHEUS -->|"Query"| GRAFANA
+
+    REDPANDA -.->|"Monitor"| CONSOLE
+    POSTGRES -.->|"Admin"| PGADMIN
+    SCHEDULER -.->|"UI"| WEBSERVER
+
+    CONSUMER2 -->|"Email/Log"| METRICS
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default'
+        });
+    </script>
+</body>
+</html>

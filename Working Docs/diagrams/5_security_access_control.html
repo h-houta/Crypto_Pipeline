@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security and Access Control Layers - Crypto Pipeline</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #F44336;
+            padding-bottom: 10px;
+        }
+        .mermaid {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        .description {
+            background-color: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #F44336;
+            color: white;
+        }
+        .security-critical {
+            background-color: #ffebee;
+            font-weight: bold;
+        }
+        .security-high {
+            background-color: #fff3e0;
+        }
+        .security-medium {
+            background-color: #f3e5f5;
+        }
+    </style>
+</head>
+<body>
+    <h1>Security and Access Control Layers</h1>
+
+    <div class="description">
+        <h2>Security Framework Overview</h2>
+        <p>Multi-layered security architecture implementing defense in depth strategy:</p>
+        <ul>
+            <li><strong>Network Security:</strong> VPC isolation, security groups, NACLs</li>
+            <li><strong>Identity & Access:</strong> RBAC, service accounts, API keys</li>
+            <li><strong>Data Security:</strong> Encryption at rest and in transit</li>
+            <li><strong>Application Security:</strong> Container scanning, secrets management</li>
+            <li><strong>Compliance:</strong> Audit logs, monitoring, alerting</li>
+        </ul>
+    </div>
+
+    <div class="mermaid">
+graph TB
+    subgraph "External Layer - Internet Facing"
+        EXT_USER["👤 External Users"]
+        EXT_API["🌐 Public APIs"]
+        EXT_THREAT["🔴 Threat Actors"]
+    end
+
+    subgraph "Perimeter Security"
+        WAF["🛡️ WAF<br/>• OWASP Top 10<br/>• Rate limiting<br/>• Geo-blocking<br/>• DDoS protection"]
+        CDN["🌍 CDN/CloudFlare<br/>• SSL/TLS termination<br/>• Bot protection<br/>• Cache layer"]
+        LB["⚖️ Load Balancer<br/>• SSL certificates<br/>• Health checks<br/>• Traffic distribution"]
+    end
+
+    subgraph "Network Security Layer"
+        VPC["🔒 VPC<br/>• Private subnets<br/>• Public subnets<br/>• NAT Gateway<br/>• Internet Gateway"]
+        SG["🚪 Security Groups<br/>• Stateful firewall<br/>• Port restrictions<br/>• Source IP filtering"]
+        NACL["📋 Network ACLs<br/>• Stateless firewall<br/>• Subnet level<br/>• Deny rules"]
+        BASTION["🔑 Bastion Host<br/>• SSH jump server<br/>• MFA required<br/>• Session recording<br/>• Auto-timeout"]
+    end
+
+    subgraph "Identity & Access Management"
+        IAM["👥 IAM/RBAC<br/>• User accounts<br/>• Service accounts<br/>• Role-based access<br/>• Least privilege"]
+        MFA["📱 Multi-Factor Auth<br/>• TOTP/Hardware keys<br/>• Mandatory for prod<br/>• API key rotation"]
+        SSO["🔐 Single Sign-On<br/>• SAML/OAuth2<br/>• Centralized auth<br/>• Session management"]
+        SECRETS["🔒 Secrets Manager<br/>• Vault/AWS Secrets<br/>• Auto-rotation<br/>• Encryption keys<br/>• API credentials"]
+    end
+
+    subgraph "Application Security"
+        subgraph "Container Security"
+            SCAN["🔍 Image Scanning<br/>• Vulnerability scan<br/>• CVE detection<br/>• Base image updates<br/>• Trivy/Snyk"]
+            SIGN["✍️ Image Signing<br/>• Cosign/Notary<br/>• Supply chain<br/>• Trusted registry"]
+            POL["📜 Pod Security<br/>• Security policies<br/>• Non-root users<br/>• Read-only FS<br/>• Network policies"]
+        end
+
+        subgraph "Data Security"
+            ENC_REST["💾 Encryption at Rest<br/>• Database: AES-256<br/>• Storage: KMS<br/>• Backups: Encrypted"]
+            ENC_TRANS["🔄 Encryption in Transit<br/>• TLS 1.3<br/>• mTLS for services<br/>• Kafka SSL<br/>• VPN tunnels"]
+            MASK["🎭 Data Masking<br/>• PII redaction<br/>• Log sanitization<br/>• Dev data masking"]
+        end
+    end
+
+    subgraph "Monitoring & Compliance"
+        AUDIT["📝 Audit Logging<br/>• CloudTrail/Stackdriver<br/>• All API calls<br/>• User activities<br/>• Data access logs"]
+        SIEM["🔍 SIEM<br/>• Security events<br/>• Anomaly detection<br/>• Alert correlation<br/>• Incident response"]
+        COMPLY["✅ Compliance<br/>• SOC2 Type II<br/>• GDPR ready<br/>• Data retention<br/>• Right to delete"]
+        MONITOR["📊 Security Monitoring<br/>• Failed auth attempts<br/>• Unusual API calls<br/>• Data exfiltration<br/>• Privilege escalation"]
+    end
+
+    EXT_USER --> WAF
+    EXT_API --> WAF
+    EXT_THREAT --> WAF
+
+    WAF --> CDN
+    CDN --> LB
+    LB --> VPC
+
+    VPC --> SG
+    SG --> NACL
+    NACL --> BASTION
+
+    BASTION --> IAM
+    IAM --> MFA
+    MFA --> SSO
+    SSO --> SECRETS
+
+    SECRETS --> SCAN
+    SCAN --> SIGN
+    SIGN --> POL
+
+    POL --> ENC_REST
+    ENC_REST --> ENC_TRANS
+    ENC_TRANS --> MASK
+
+    MASK --> AUDIT
+    AUDIT --> SIEM
+    SIEM --> COMPLY
+    COMPLY --> MONITOR
+
+    style WAF fill:#ffcdd2
+    style VPC fill:#e1bee7
+    style IAM fill:#c5cae9
+    style ENC_REST fill:#b2dfdb
+    style AUDIT fill:#ffe0b2
+    </div>
+
+    <div class="mermaid">
+graph LR
+    subgraph "Access Control Matrix"
+        subgraph "Roles"
+            R_ADMIN["👑 Admin<br/>Full access"]
+            R_DEV["💻 Developer<br/>Read/Write Dev/Stage"]
+            R_DATA["📊 Data Analyst<br/>Read-only Prod data"]
+            R_OPS["⚙️ DevOps<br/>Infrastructure access"]
+            R_AUDIT["📋 Auditor<br/>Logs and reports"]
+        end
+
+        subgraph "Resources"
+            RES_PROD["Production<br/>• Databases<br/>• Kafka<br/>• APIs"]
+            RES_STAGE["Staging<br/>• Test data<br/>• Pre-prod"]
+            RES_DEV["Development<br/>• Local data<br/>• Sandbox"]
+            RES_INFRA["Infrastructure<br/>• K8s cluster<br/>• Cloud resources"]
+            RES_LOGS["Monitoring<br/>• Logs<br/>• Metrics<br/>• Alerts"]
+        end
+
+        subgraph "Permissions"
+            P_FULL["✅ Full Access"]
+            P_RW["📝 Read/Write"]
+            P_RO["👁️ Read Only"]
+            P_EXEC["⚡ Execute"]
+            P_DENY["❌ No Access"]
+        end
+    end
+
+    R_ADMIN --> P_FULL
+    P_FULL --> RES_PROD
+    P_FULL --> RES_STAGE
+    P_FULL --> RES_DEV
+    P_FULL --> RES_INFRA
+    P_FULL --> RES_LOGS
+
+    R_DEV --> P_RW
+    P_RW --> RES_DEV
+    P_RW --> RES_STAGE
+    R_DEV --> P_RO
+    P_RO --> RES_PROD
+
+    R_DATA --> P_RO
+    P_RO --> RES_PROD
+    P_RO --> RES_LOGS
+
+    R_OPS --> P_FULL
+    P_FULL --> RES_INFRA
+    R_OPS --> P_EXEC
+    P_EXEC --> RES_PROD
+
+    R_AUDIT --> P_RO
+    P_RO --> RES_LOGS
+
+    style R_ADMIN fill:#ffcdd2
+    style R_DEV fill:#e1bee7
+    style R_DATA fill:#c5cae9
+    style R_OPS fill:#b2dfdb
+    style R_AUDIT fill:#ffe0b2
+    </div>
+
+    <div class="description">
+        <h2>Security Controls by Component</h2>
+        <table>
+            <tr>
+                <th>Component</th>
+                <th>Security Controls</th>
+                <th>Risk Level</th>
+            </tr>
+            <tr class="security-critical">
+                <td>API Gateway</td>
+                <td>
+                    • API key authentication<br/>
+                    • Rate limiting (1000 req/min)<br/>
+                    • OAuth 2.0 / JWT tokens<br/>
+                    • Request validation
+                </td>
+                <td>Critical</td>
+            </tr>
+            <tr class="security-critical">
+                <td>Kafka/Redpanda</td>
+                <td>
+                    • SASL/SCRAM authentication<br/>
+                    • TLS encryption<br/>
+                    • ACLs per topic<br/>
+                    • Network isolation
+                </td>
+                <td>Critical</td>
+            </tr>
+            <tr class="security-critical">
+                <td>PostgreSQL</td>
+                <td>
+                    • SSL required<br/>
+                    • Row-level security<br/>
+                    • Encrypted backups<br/>
+                    • Connection limits
+                </td>
+                <td>Critical</td>
+            </tr>
+            <tr class="security-high">
+                <td>Airflow</td>
+                <td>
+                    • LDAP/AD integration<br/>
+                    • Role-based DAG access<br/>
+                    • Encrypted connections<br/>
+                    • Audit logs
+                </td>
+                <td>High</td>
+            </tr>
+            <tr class="security-high">
+                <td>Containers</td>
+                <td>
+                    • Non-root users<br/>
+                    • Read-only filesystem<br/>
+                    • Security scanning<br/>
+                    • Resource limits
+                </td>
+                <td>High</td>
+            </tr>
+            <tr class="security-medium">
+                <td>Monitoring</td>
+                <td>
+                    • Read-only access<br/>
+                    • No PII in logs<br/>
+                    • Log retention policy<br/>
+                    • Alert encryption
+                </td>
+                <td>Medium</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="mermaid">
+flowchart TD
+    subgraph "Incident Response Plan"
+        DETECT["🚨 Detection<br/>• SIEM alerts<br/>• Anomaly detection<br/>• User reports<br/>• Monitoring"]
+
+        TRIAGE["📋 Triage<br/>• Severity assessment<br/>• Impact analysis<br/>• Resource allocation<br/>• Stakeholder notify"]
+
+        CONTAIN["🔒 Containment<br/>• Isolate affected systems<br/>• Preserve evidence<br/>• Stop data loss<br/>• Limit spread"]
+
+        ERADICATE["🧹 Eradication<br/>• Remove threat<br/>• Patch vulnerabilities<br/>• Update signatures<br/>• Clean systems"]
+
+        RECOVER["♻️ Recovery<br/>• Restore services<br/>• Verify integrity<br/>• Monitor closely<br/>• User communication"]
+
+        LESSONS["📚 Lessons Learned<br/>• Post-mortem<br/>• Update procedures<br/>• Training needs<br/>• Preventive measures"]
+    end
+
+    DETECT -->|"< 5 min"| TRIAGE
+    TRIAGE -->|"< 15 min"| CONTAIN
+    CONTAIN -->|"< 1 hour"| ERADICATE
+    ERADICATE -->|"< 4 hours"| RECOVER
+    RECOVER -->|"< 1 week"| LESSONS
+
+    style DETECT fill:#ffcdd2
+    style TRIAGE fill:#ffe0b2
+    style CONTAIN fill:#fff9c4
+    style ERADICATE fill:#f0f4c3
+    style RECOVER fill:#c8e6c9
+    style LESSONS fill:#b2dfdb
+    </div>
+
+    <div class="description">
+        <h2>Security Checklist</h2>
+        <table>
+            <tr>
+                <th>Category</th>
+                <th>Item</th>
+                <th>Status</th>
+            </tr>
+            <tr>
+                <td rowspan="4">Network</td>
+                <td>VPC with private subnets</td>
+                <td>✅ Implemented</td>
+            </tr>
+            <tr>
+                <td>Security groups configured</td>
+                <td>✅ Implemented</td>
+            </tr>
+            <tr>
+                <td>NACLs for subnet isolation</td>
+                <td>⚠️ Partial</td>
+            </tr>
+            <tr>
+                <td>VPN/Private connectivity</td>
+                <td>📋 Planned</td>
+            </tr>
+            <tr>
+                <td rowspan="4">Identity</td>
+                <td>MFA for all users</td>
+                <td>✅ Implemented</td>
+            </tr>
+            <tr>
+                <td>Service accounts with minimal permissions</td>
+                <td>✅ Implemented</td>
+            </tr>
+            <tr>
+                <td>Regular key rotation</td>
+                <td>⚠️ Partial</td>
+            </tr>
+            <tr>
+                <td>SSO integration</td>
+                <td>📋 Planned</td>
+            </tr>
+            <tr>
+                <td rowspan="4">Data</td>
+                <td>Encryption at rest</td>
+                <td>✅ Implemented</td>
+            </tr>
+            <tr>
+                <td>Encryption in transit</td>
+                <td>✅ Implemented</td>
+            </tr>
+            <tr>
+                <td>Data masking/tokenization</td>
+                <td>⚠️ Partial</td>
+            </tr>
+            <tr>
+                <td>Backup encryption</td>
+                <td>✅ Implemented</td>
+            </tr>
+            <tr>
+                <td rowspan="4">Monitoring</td>
+                <td>Centralized logging</td>
+                <td>✅ Implemented</td>
+            </tr>
+            <tr>
+                <td>Security event monitoring</td>
+                <td>⚠️ Partial</td>
+            </tr>
+            <tr>
+                <td>Vulnerability scanning</td>
+                <td>✅ Implemented</td>
+            </tr>
+            <tr>
+                <td>Penetration testing</td>
+                <td>📋 Planned</td>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#F44336',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#D32F2F',
+                lineColor: '#333'
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cost Optimization Analysis - Crypto Pipeline</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #FF9800;
+            padding-bottom: 10px;
+        }
+        .mermaid {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        .description {
+            background-color: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #FF9800;
+            color: white;
+        }
+        .cost-positive { color: green; font-weight: bold; }
+        .cost-negative { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Cost Optimization Analysis</h1>
+
+    <div class="description">
+        <h2>Monthly Cost Breakdown (Estimated)</h2>
+        <table>
+            <tr>
+                <th>Component</th>
+                <th>Current Cost</th>
+                <th>Optimized Cost</th>
+                <th>Savings</th>
+            </tr>
+            <tr>
+                <td>Compute (EC2/GKE)</td>
+                <td>$1,200</td>
+                <td>$720</td>
+                <td class="cost-positive">40% ↓</td>
+            </tr>
+            <tr>
+                <td>Storage (EBS/Persistent Disks)</td>
+                <td>$400</td>
+                <td>$250</td>
+                <td class="cost-positive">37% ↓</td>
+            </tr>
+            <tr>
+                <td>Database (RDS/Cloud SQL)</td>
+                <td>$800</td>
+                <td>$500</td>
+                <td class="cost-positive">37% ↓</td>
+            </tr>
+            <tr>
+                <td>Network Transfer</td>
+                <td>$300</td>
+                <td>$180</td>
+                <td class="cost-positive">40% ↓</td>
+            </tr>
+            <tr>
+                <td>Monitoring & Logging</td>
+                <td>$200</td>
+                <td>$150</td>
+                <td class="cost-positive">25% ↓</td>
+            </tr>
+            <tr>
+                <td><strong>Total</strong></td>
+                <td><strong>$2,900</strong></td>
+                <td><strong>$1,800</strong></td>
+                <td class="cost-positive"><strong>38% ↓</strong></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="mermaid">
+pie title Current Cost Distribution
+    "Compute" : 41
+    "Database" : 28
+    "Storage" : 14
+    "Network" : 10
+    "Monitoring" : 7
+    </div>
+
+    <div class="mermaid">
+graph TB
+    subgraph "Cost Optimization Strategies"
+        subgraph "Compute Optimization"
+            C1["💰 Reserved Instances<br/>• 1-3 year commitment<br/>• 40-60% savings<br/>• Predictable workloads"]
+            C2["⚡ Spot Instances<br/>• Non-critical workers<br/>• 70-90% savings<br/>• Airflow workers, Dev env"]
+            C3["📊 Right-sizing<br/>• Monitor actual usage<br/>• Downsize over-provisioned<br/>• CPU: 40% avg → t3.medium"]
+            C4["🔄 Auto-scaling<br/>• Scale down at night<br/>• Weekend reduction<br/>• 30% less runtime"]
+        end
+
+        subgraph "Storage Optimization"
+            S1["🗄️ Tiered Storage<br/>• Hot: SSD (7 days)<br/>• Warm: HDD (30 days)<br/>• Cold: S3/Glacier (Archive)"]
+            S2["🗜️ Compression<br/>• TimescaleDB native<br/>• 10:1 ratio typical<br/>• Older than 7 days"]
+            S3["🧹 Data Lifecycle<br/>• Auto-delete old data<br/>• Aggregate before archive<br/>• Keep only summaries"]
+            S4["📦 Snapshot Management<br/>• Daily → Weekly → Monthly<br/>• Retain 30 days max<br/>• Incremental backups"]
+        end
+
+        subgraph "Database Optimization"
+            D1["📈 Read Replicas<br/>• Use spot for replicas<br/>• Scale down off-peak<br/>• Cross-AZ only if needed"]
+            D2["🔧 Parameter Tuning<br/>• Connection pooling<br/>• Query optimization<br/>• Index management"]
+            D3["💾 Reserved Capacity<br/>• RDS Reserved Instances<br/>• 40% savings<br/>• Predictable load"]
+            D4["⏰ Scheduled Scaling<br/>• Dev/Test: Stop at night<br/>• Staging: Weekdays only<br/>• 60% reduction"]
+        end
+
+        subgraph "Network Optimization"
+            N1["🌐 Data Transfer<br/>• Same AZ placement<br/>• VPC endpoints<br/>• Avoid cross-region"]
+            N2["🔄 CDN/Caching<br/>• CloudFront for APIs<br/>• Redis for hot data<br/>• Reduce DB queries"]
+            N3["🗜️ Compression<br/>• Kafka compression<br/>• API gzip responses<br/>• 70% bandwidth saving"]
+            N4["📊 Traffic Shaping<br/>• Batch operations<br/>• Off-peak transfers<br/>• Optimize payload size"]
+        end
+    end
+
+    C1 --> Savings1["💵 $480/month"]
+    C2 --> Savings2["💵 $200/month"]
+    C3 --> Savings3["💵 $150/month"]
+    S1 --> Savings4["💵 $100/month"]
+    S2 --> Savings5["💵 $80/month"]
+    D3 --> Savings6["💵 $300/month"]
+    N1 --> Savings7["💵 $120/month"]
+
+    style Savings1 fill:#c8e6c9
+    style Savings2 fill:#c8e6c9
+    style Savings3 fill:#c8e6c9
+    style Savings4 fill:#c8e6c9
+    style Savings5 fill:#c8e6c9
+    style Savings6 fill:#c8e6c9
+    style Savings7 fill:#c8e6c9
+    </div>
+
+    <div class="mermaid">
+graph LR
+    subgraph "Implementation Roadmap"
+        W1["Week 1<br/>Analyze Usage<br/>• CloudWatch metrics<br/>• Cost Explorer<br/>• Identify waste"]
+        W2["Week 2<br/>Quick Wins<br/>• Stop unused resources<br/>• Delete old snapshots<br/>• Rightsize instances"]
+        W3["Week 3<br/>Reserved Instances<br/>• Calculate savings<br/>• Purchase RIs<br/>• Apply to prod"]
+        W4["Week 4<br/>Architecture Changes<br/>• Implement auto-scaling<br/>• Enable compression<br/>• Setup lifecycle policies"]
+        M2["Month 2<br/>Advanced Optimization<br/>• Spot instances<br/>• Tiered storage<br/>• Caching layer"]
+        M3["Month 3<br/>Continuous Optimization<br/>• Monthly reviews<br/>• Automated reports<br/>• Cost anomaly alerts"]
+    end
+
+    W1 -->|"$200 saved"| W2
+    W2 -->|"$400 saved"| W3
+    W3 -->|"$600 saved"| W4
+    W4 -->|"$800 saved"| M2
+    M2 -->|"$1000 saved"| M3
+    M3 -->|"$1100 saved"| M3
+
+    style W1 fill:#fff3e0
+    style W2 fill:#ffe0b2
+    style W3 fill:#ffcc80
+    style W4 fill:#ffb74d
+    style M2 fill:#ffa726
+    style M3 fill:#ff9800
+    </div>
+
+    <div class="description">
+        <h2>Cost Monitoring & Alerts</h2>
+        <table>
+            <tr>
+                <th>Alert Type</th>
+                <th>Threshold</th>
+                <th>Action</th>
+            </tr>
+            <tr>
+                <td>Daily Spend</td>
+                <td>> $100</td>
+                <td>Email notification</td>
+            </tr>
+            <tr>
+                <td>Weekly Spend</td>
+                <td>> $500</td>
+                <td>Review and optimize</td>
+            </tr>
+            <tr>
+                <td>Unused Resources</td>
+                <td>> 48 hours idle</td>
+                <td>Auto-stop or terminate</td>
+            </tr>
+            <tr>
+                <td>Storage Growth</td>
+                <td>> 20% monthly</td>
+                <td>Implement cleanup</td>
+            </tr>
+            <tr>
+                <td>Network Transfer</td>
+                <td>> 1TB/day</td>
+                <td>Investigate and optimize</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="mermaid">
+graph TD
+    subgraph "Environment-Based Cost Strategy"
+        PROD["🔵 Production<br/>• Reserved Instances<br/>• High Availability<br/>• Full monitoring<br/>Budget: $1200/mo"]
+        STAGE["🟡 Staging<br/>• On-demand + Spot<br/>• Single AZ<br/>• Business hours only<br/>Budget: $400/mo"]
+        DEV["🟢 Development<br/>• All Spot instances<br/>• Minimal resources<br/>• Auto-shutdown<br/>Budget: $200/mo"]
+
+        PROD --> COST1["Optimization:<br/>• RI Coverage: 80%<br/>• Compression: ON<br/>• Auto-scale: 24/7"]
+        STAGE --> COST2["Optimization:<br/>• Spot: 50%<br/>• Schedule: 12hrs/day<br/>• Shared resources"]
+        DEV --> COST3["Optimization:<br/>• Spot: 100%<br/>• Schedule: 8hrs/day<br/>• Minimal replicas"]
+    end
+
+    style PROD fill:#e3f2fd
+    style STAGE fill:#fff9c4
+    style DEV fill:#e8f5e9
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#FF9800',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#F57C00',
+                lineColor: '#333'
+            }
+        });
+    </script>
+</body>
+</html>

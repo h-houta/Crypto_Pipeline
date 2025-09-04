@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temporal Data Flow Sequence - Crypto Pipeline</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #9C27B0;
+            padding-bottom: 10px;
+        }
+        .mermaid {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        .description {
+            background-color: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Temporal Data Flow Sequence</h1>
+
+    <div class="description">
+        <h2>Time-Based Data Processing Flow</h2>
+        <p>This sequence diagram illustrates the chronological flow of data through the pipeline, showing timing and interactions between components.</p>
+        <ul>
+            <li><strong>Polling Interval:</strong> Every 10 seconds</li>
+            <li><strong>Batch Processing:</strong> 5-minute windows</li>
+            <li><strong>DBT Transformations:</strong> Every 30 minutes</li>
+            <li><strong>Health Monitoring:</strong> Continuous with hourly checks</li>
+        </ul>
+    </div>
+
+    <div class="mermaid">
+sequenceDiagram
+    participant CB as Coinbase API
+    participant P as Producer Service
+    participant K as Kafka/Redpanda
+    participant PC as PostgreSQL Consumer
+    participant AC as Alert Consumer
+    participant DB as TimescaleDB
+    participant DBT as DBT Models
+    participant AF as Airflow DAGs
+    participant G as Grafana
+    participant E as Email Service
+
+    Note over AF: crypto_pipeline DAG<br/>Runs every 15 minutes
+
+    AF->>+P: Start Producer (T=0)
+
+    loop Every 10 seconds for 5 minutes
+        P->>+CB: GET /products/ticker
+        CB-->>-P: Price Data (BTC, ETH, SOL...)
+        Note over P: Batch messages<br/>Size: 100<br/>Linger: 100ms
+        P->>K: Produce to 'crypto_prices' topic
+        Note over K: Message stored<br/>Partition by symbol<br/>Retention: 7 days
+    end
+
+    P-->>-AF: Producer batch complete (T+5min)
+
+    AF->>+PC: Start Consumer (T+5min)
+
+    par Parallel Consumption
+        loop Process messages for 5 minutes
+            K->>PC: Consume batch (500 msgs)
+            PC->>PC: Begin transaction
+            PC->>DB: INSERT INTO crypto.price_data
+            Note over DB: Hypertable<br/>Auto-partitioned by time<br/>Indexed by (timestamp, symbol)
+            PC->>K: Commit offsets
+            PC->>PC: Commit transaction
+            Note over PC: Exactly-once delivery
+        end
+    and
+        loop Continuous monitoring
+            K->>AC: Consume price messages
+            AC->>AC: Calculate % change<br/>5-minute window
+            alt Price change > 10%
+                AC->>E: Send alert email
+                AC->>AC: Log to price_alerts.log
+                Note over AC: Alert triggered!<br/>Symbol, price, % change
+            end
+        end
+    end
+
+    PC-->>-AF: Consumer batch complete (T+10min)
+
+    AF->>AF: Validate Data Quality
+    AF->>DB: Query recent records
+    DB-->>AF: Record count & timestamps
+    Note over AF: Check:<br/>• Data freshness<br/>• No gaps > 1min<br/>• No null values
+
+    Note over AF: crypto_dbt_transformations DAG<br/>Runs every 30 minutes
+
+    AF->>+DBT: Trigger DBT run (T+30min)
+
+    DBT->>DB: SELECT FROM crypto.price_data
+    Note over DBT: Staging layer<br/>Clean & cast data types
+
+    DBT->>DBT: Transform to OHLCV
+    Note over DBT: 15-minute intervals<br/>Open, High, Low, Close, Volume
+
+    DBT->>DB: INSERT INTO crypto_ohlcv_15min
+    Note over DB: Incremental update<br/>Only new periods
+
+    DBT->>DBT: Run data tests
+    Note over DBT: Tests:<br/>• Not null<br/>• Unique keys<br/>• Value ranges
+
+    DBT-->>-AF: DBT run complete
+
+    AF->>AF: Generate Quality Report
+    AF->>DB: Query statistics
+    DB-->>AF: Metrics & aggregations
+
+    Note over AF: crypto_streaming_manager DAG<br/>Runs hourly
+
+    AF->>P: Check health status
+    P-->>AF: Service metrics
+    alt Service unhealthy
+        AF->>P: Restart service
+        Note over P: Auto-recovery
+    end
+
+    AF->>PC: Check health status
+    PC-->>AF: Service metrics
+    alt Service unhealthy
+        AF->>PC: Restart service
+        Note over PC: Auto-recovery
+    end
+
+    loop Every 15 seconds
+        P->>G: Export metrics
+        PC->>G: Export metrics
+        DB->>G: Export metrics
+        Note over G: Metrics:<br/>• Throughput<br/>• Latency<br/>• Error rate<br/>• Lag
+    end
+
+    G->>G: Update dashboards
+    Note over G: Real-time visualization<br/>Alerts on thresholds
+
+    alt Metric threshold exceeded
+        G->>E: Send alert
+        Note over E: Ops team notified
+    end
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default'
+        });
+    </script>
+</body>
+</html>

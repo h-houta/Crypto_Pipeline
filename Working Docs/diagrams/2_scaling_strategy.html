@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scaling Strategy - Crypto Pipeline</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #2196F3;
+            padding-bottom: 10px;
+        }
+        .mermaid {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        .description {
+            background-color: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Scaling Strategy - Horizontal and Vertical</h1>
+
+    <div class="description">
+        <h2>Scaling Dimensions</h2>
+        <ul>
+            <li><strong>Horizontal Scaling:</strong> Add more instances of services</li>
+            <li><strong>Vertical Scaling:</strong> Increase resources per instance</li>
+            <li><strong>Auto-scaling:</strong> Dynamic resource allocation based on metrics</li>
+            <li><strong>Sharding:</strong> Distribute data across multiple databases</li>
+        </ul>
+    </div>
+
+    <div class="mermaid">
+graph TB
+    subgraph "Current Scale (Baseline)"
+        C1["📊 Current Capacity<br/>• 10 symbols<br/>• 6 msg/sec<br/>• 500K msg/day<br/>• 1 producer<br/>• 1 consumer<br/>• Single DB"]
+    end
+
+    subgraph "Scaling Triggers"
+        T1["📈 Load Triggers<br/>• CPU > 70%<br/>• Memory > 80%<br/>• Lag > 1000 msg<br/>• Latency > 500ms"]
+        T2["📊 Business Triggers<br/>• Add 50+ symbols<br/>• 10x volume<br/>• Sub-second SLA<br/>• Global expansion"]
+    end
+
+    subgraph "Horizontal Scaling - Producers"
+        HP1["Producer Pool<br/>• 3-5 instances<br/>• Symbol sharding<br/>• Load balancer<br/>• Health checks"]
+        HP2["Partition Strategy<br/>• 1 partition/symbol<br/>• Round-robin<br/>• Sticky sessions<br/>• Failover ready"]
+    end
+
+    subgraph "Horizontal Scaling - Kafka"
+        HK1["Kafka Cluster<br/>• 3 brokers minimum<br/>• Replication factor: 2<br/>• 100+ partitions<br/>• Rack awareness"]
+        HK2["Topic Optimization<br/>• crypto_prices_v2<br/>• crypto_orderbook<br/>• crypto_trades<br/>• crypto_analytics"]
+    end
+
+    subgraph "Horizontal Scaling - Consumers"
+        HC1["Consumer Groups<br/>• 5-10 instances<br/>• Partition assignment<br/>• Cooperative rebalancing<br/>• Offset management"]
+        HC2["Specialized Consumers<br/>• DB Writer (5x)<br/>• Alert Monitor (3x)<br/>• Analytics (3x)<br/>• Archive (2x)"]
+    end
+
+    subgraph "Horizontal Scaling - Database"
+        HD1["TimescaleDB Cluster<br/>• Multi-node<br/>• Data nodes: 3-5<br/>• Access node: 2<br/>• Distributed hypertables"]
+        HD2["Read Replicas<br/>• 2-3 replicas<br/>• Read load balancing<br/>• Async replication<br/>• Failover ready"]
+    end
+
+    subgraph "Vertical Scaling Options"
+        V1["Producer Scaling<br/>• 2 → 4 vCPU<br/>• 4 → 8 GB RAM<br/>• Batch size: 100 → 500<br/>• Compression: snappy"]
+        V2["Kafka Scaling<br/>• 4 → 8 vCPU/broker<br/>• 8 → 16 GB RAM<br/>• NVMe SSDs<br/>• 10 Gbps network"]
+        V3["Database Scaling<br/>• 8 → 32 vCPU<br/>• 32 → 128 GB RAM<br/>• io2 SSD: 10K IOPS<br/>• Connection pool: 200"]
+    end
+
+    subgraph "Auto-scaling Policies"
+        AS1["Producer Auto-scale<br/>• Min: 1, Max: 10<br/>• Target CPU: 60%<br/>• Scale-out: +2<br/>• Scale-in: -1"]
+        AS2["Consumer Auto-scale<br/>• Min: 2, Max: 20<br/>• Target lag: 500<br/>• Scale-out: +3<br/>• Cool-down: 5min"]
+        AS3["Database Auto-scale<br/>• Storage: Auto-expand<br/>• IOPS: Auto-adjust<br/>• Read replicas: 1-5<br/>• Based on connections"]
+    end
+
+    subgraph "Performance Targets"
+        P1["🎯 Target Metrics<br/>• 100 symbols<br/>• 100 msg/sec<br/>• 10M msg/day<br/>• <50ms latency<br/>• 99.99% uptime"]
+        P2["💰 Cost Targets<br/>• <$5K/month<br/>• Optimize spot instances<br/>• Reserved capacity<br/>• Data lifecycle"]
+    end
+
+    C1 --> T1
+    C1 --> T2
+
+    T1 --> HP1
+    T1 --> HK1
+    T1 --> HC1
+    T1 --> HD1
+
+    T2 --> V1
+    T2 --> V2
+    T2 --> V3
+
+    HP1 --> HP2
+    HK1 --> HK2
+    HC1 --> HC2
+    HD1 --> HD2
+
+    V1 --> AS1
+    V2 --> AS2
+    V3 --> AS3
+
+    AS1 --> P1
+    AS2 --> P1
+    AS3 --> P1
+
+    P1 --> P2
+
+    style C1 fill:#e3f2fd
+    style P1 fill:#c8e6c9
+    style P2 fill:#fff9c4
+    </div>
+
+    <div class="mermaid">
+graph LR
+    subgraph "Scaling Timeline"
+        M1["Month 1<br/>Baseline<br/>10 symbols"]
+        M2["Month 2<br/>+Consumers<br/>25 symbols"]
+        M3["Month 3<br/>+Kafka nodes<br/>50 symbols"]
+        M4["Month 6<br/>Multi-region<br/>100 symbols"]
+        M5["Month 12<br/>Full scale<br/>200+ symbols"]
+    end
+
+    M1 -->|"Scale consumers"| M2
+    M2 -->|"Scale Kafka"| M3
+    M3 -->|"Add regions"| M4
+    M4 -->|"Optimize"| M5
+
+    style M1 fill:#bbdefb
+    style M2 fill:#c5cae9
+    style M3 fill:#d1c4e9
+    style M4 fill:#e1bee7
+    style M5 fill:#f8bbd0
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#2196F3',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#1976D2',
+                lineColor: '#333',
+                secondaryColor: '#4CAF50'
+            }
+        });
+    </script>
+</body>
+</html>

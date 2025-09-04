@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Pipeline Architecture - Crypto Pipeline</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .mermaid {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        .description {
+            background-color: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Main Pipeline Architecture</h1>
+
+    <div class="description">
+        <h2>End-to-End Data Flow</h2>
+        <p>This diagram shows the complete crypto data pipeline from data sources through processing to analytics outputs.</p>
+        <ul>
+            <li><strong>Data Sources:</strong> Coinbase API and WebSocket feeds</li>
+            <li><strong>Streaming:</strong> Kafka/Redpanda message broker</li>
+            <li><strong>Storage:</strong> TimescaleDB for time-series data</li>
+            <li><strong>Processing:</strong> DBT transformations for analytics</li>
+            <li><strong>Orchestration:</strong> Airflow DAGs for workflow management</li>
+        </ul>
+    </div>
+
+    <div class="mermaid">
+graph TB
+    %% Styling
+    classDef apiSource fill:#e1f5fe,stroke:#01579b,stroke-width:3px,color:#000
+    classDef streaming fill:#fff3e0,stroke:#e65100,stroke-width:3px,color:#000
+    classDef storage fill:#f3e5f5,stroke:#4a148c,stroke-width:3px,color:#000
+    classDef processing fill:#e8f5e9,stroke:#1b5e20,stroke-width:3px,color:#000
+    classDef orchestration fill:#fce4ec,stroke:#880e4f,stroke-width:3px,color:#000
+    classDef monitoring fill:#fff9c4,stroke:#827717,stroke-width:3px,color:#000
+    classDef analytics fill:#e0f2f1,stroke:#004d40,stroke-width:3px,color:#000
+    classDef alert fill:#ffebee,stroke:#b71c1c,stroke-width:3px,color:#000
+
+    %% Data Sources
+    subgraph "Data Sources"
+        CB["🪙 Coinbase API<br/>Real-time Prices"]:::apiSource
+        CBW["🌐 Coinbase WebSocket<br/>Live Ticker Stream"]:::apiSource
+    end
+
+    %% Producer Layer
+    subgraph "Data Ingestion"
+        PROD["📡 Kafka Producer<br/>coinbase_producer.py<br/>• Batch: 10s intervals<br/>• Idempotent writes<br/>• Error handling"]:::streaming
+    end
+
+    %% Message Broker
+    subgraph "Message Streaming"
+        KAFKA["📨 Redpanda/Kafka<br/>Topic: crypto_prices<br/>• High throughput<br/>• Low latency<br/>• Partitioned by symbol"]:::streaming
+    end
+
+    %% Consumer Layer
+    subgraph "Data Consumers"
+        PGCONS["💾 PostgreSQL Consumer<br/>postgres_consumer.py<br/>• Exactly-once delivery<br/>• Batch inserts<br/>• Transaction control"]:::processing
+        ALERTCONS["🚨 Alert Consumer<br/>price_alert_consumer.py<br/>• >10% price changes<br/>• Real-time monitoring"]:::alert
+    end
+
+    %% Storage Layer
+    subgraph "Data Storage"
+        TS["🗄️ TimescaleDB<br/>crypto.price_data<br/>• Time-series optimized<br/>• Hypertables<br/>• Compression"]:::storage
+
+        LOGS["📝 Alert Logs<br/>price_alerts.log"]:::monitoring
+    end
+
+    %% Transformation Layer
+    subgraph "DBT Transformations"
+        STAGE["📊 Staging Layer<br/>stg_crypto_prices<br/>• Data cleaning<br/>• Type casting"]:::processing
+
+        MARTS["📈 Marts Layer"]:::analytics
+        OHLCV["📊 crypto_ohlcv_15min<br/>• OHLCV aggregation<br/>• 15-min intervals"]:::analytics
+        LATEST["💹 latest_crypto_prices<br/>• Current prices<br/>• Real-time view"]:::analytics
+        SUMMARY["📉 price_summary_15min<br/>• Statistical summary<br/>• Volume metrics"]:::analytics
+    end
+
+    %% Orchestration Layer
+    subgraph "Airflow Orchestration"
+        DAG1["🔄 crypto_pipeline<br/>• Every 15 mins<br/>• Health checks<br/>• Data validation"]:::orchestration
+        DAG2["⚙️ crypto_streaming_manager<br/>• Hourly checks<br/>• Service monitoring<br/>• Auto-restart"]:::orchestration
+        DAG3["🔧 crypto_dbt_transformations<br/>• Every 30 mins<br/>• DBT runs<br/>• Quality checks"]:::orchestration
+    end
+
+    %% Monitoring & Observability
+    subgraph "Monitoring & Observability"
+        PROM["📊 Prometheus<br/>Metrics Collection"]:::monitoring
+        GRAF["📈 Grafana<br/>Dashboard<br/>• Throughput<br/>• Latency<br/>• Errors"]:::monitoring
+        HEALTH["🏥 Health Checks<br/>• Kafka status<br/>• DB connectivity<br/>• Service uptime"]:::monitoring
+        DQ["✅ Data Quality<br/>• Freshness checks<br/>• Anomaly detection<br/>• Completeness"]:::monitoring
+    end
+
+    %% Analytics & Outputs
+    subgraph "Analytics & Outputs"
+        DASH["📊 Analytics Dashboards<br/>• Price trends<br/>• Volume analysis<br/>• Market insights"]:::analytics
+        ALERTS["📧 Email Alerts<br/>• Price anomalies<br/>• System failures"]:::alert
+        API["🔌 API Endpoints<br/>• REST API<br/>• Real-time data"]:::analytics
+    end
+
+    %% Data Flow Connections
+    CB --> PROD
+    CBW -.->|Optional| PROD
+    PROD --> KAFKA
+
+    KAFKA --> PGCONS
+    KAFKA --> ALERTCONS
+
+    PGCONS --> TS
+    ALERTCONS --> LOGS
+    ALERTCONS --> ALERTS
+
+    TS --> STAGE
+    STAGE --> OHLCV
+    STAGE --> LATEST
+    STAGE --> SUMMARY
+
+    OHLCV --> MARTS
+    LATEST --> MARTS
+    SUMMARY --> MARTS
+
+    MARTS --> DASH
+    MARTS --> API
+
+    %% Orchestration Connections
+    DAG1 -.->|Triggers| PROD
+    DAG1 -.->|Triggers| PGCONS
+    DAG1 -.->|Validates| TS
+
+    DAG2 -.->|Monitors| PROD
+    DAG2 -.->|Monitors| PGCONS
+    DAG2 -.->|Monitors| ALERTCONS
+
+    DAG3 -.->|Executes| STAGE
+    DAG3 -.->|Executes| MARTS
+    DAG3 -.->|Validates| DQ
+
+    %% Monitoring Connections
+    PROD -.->|Metrics| PROM
+    PGCONS -.->|Metrics| PROM
+    TS -.->|Metrics| PROM
+    PROM --> GRAF
+
+    DAG1 -.->|Status| HEALTH
+    DAG2 -.->|Status| HEALTH
+    DAG3 -.->|Status| HEALTH
+
+    HEALTH --> GRAF
+    DQ --> GRAF
+    DQ -.->|Issues| ALERTS
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default'
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Lifecycle and Transformation - Crypto Pipeline</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #FF5722;
+            padding-bottom: 10px;
+        }
+        .mermaid {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        .description {
+            background-color: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Data Lifecycle and Transformation</h1>
+    
+    <div class="description">
+        <h2>Data Journey from Raw to Refined</h2>
+        <p>This diagram shows how data transforms from raw API responses to business-ready analytical datasets.</p>
+        <ul>
+            <li><strong>Raw Layer:</strong> Direct API responses and Kafka messages</li>
+            <li><strong>Bronze Layer:</strong> Raw storage in TimescaleDB</li>
+            <li><strong>Silver Layer:</strong> Cleaned and standardized data</li>
+            <li><strong>Gold Layer:</strong> Business-ready analytical models</li>
+            <li><strong>Metrics:</strong> Performance and quality KPIs</li>
+        </ul>
+    </div>
+
+    <div class="mermaid">
+graph TD
+    %% Styling
+    classDef raw fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef bronze fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef silver fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef gold fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef metric fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    
+    subgraph "RAW DATA LAYER"
+        R1["📥 Coinbase API Response<br/>{<br/>  'symbol': 'BTC-USD',<br/>  'price': '43521.23',<br/>  'volume': '1234.56',<br/>  'time': '2024-01-15T10:30:45Z',<br/>  'bid': '43520.00',<br/>  'ask': '43522.00'<br/>}"]:::raw
+        
+        R2["📨 Kafka Message<br/>{<br/>  'key': 'BTC-USD',<br/>  'value': {...price_data},<br/>  'timestamp': 1705315845000,<br/>  'partition': 0,<br/>  'offset': 12345<br/>}"]:::raw
+    end
+    
+    subgraph "BRONZE LAYER - Raw Storage"
+        B1["🗄️ crypto.price_data<br/>TimescaleDB Hypertable<br/>• symbol VARCHAR(20)<br/>• price DECIMAL(18,8)<br/>• volume DECIMAL(18,8)<br/>• timestamp TIMESTAMPTZ<br/>• bid DECIMAL(18,8)<br/>• ask DECIMAL(18,8)<br/>• created_at TIMESTAMPTZ"]:::bronze
+        
+        B2["📊 Data Volume<br/>• ~360 records/hour/symbol<br/>• ~8,640 records/day/symbol<br/>• 10 symbols = 86,400 records/day<br/>• Compressed after 7 days"]:::bronze
+    end
+    
+    subgraph "SILVER LAYER - Cleaned & Standardized"
+        S1["🔧 stg_crypto_prices<br/>DBT Staging Model<br/>• Renamed columns<br/>• Type casting<br/>• Null handling<br/>• Deduplication<br/>• Business logic applied"]:::silver
+        
+        S2["✨ Transformations<br/>• timestamp → time<br/>• symbol standardization<br/>• price validation (>0)<br/>• volume validation (>=0)<br/>• Remove test data"]:::silver
+    end
+    
+    subgraph "GOLD LAYER - Business Ready"
+        G1["📈 crypto_ohlcv_15min<br/>15-Minute Candlesticks<br/>• period_start TIMESTAMP<br/>• symbol VARCHAR<br/>• open DECIMAL<br/>• high DECIMAL<br/>• low DECIMAL<br/>• close DECIMAL<br/>• volume DECIMAL<br/>• trade_count INT"]:::gold
+        
+        G2["💹 latest_crypto_prices<br/>Current Prices View<br/>• symbol<br/>• current_price<br/>• 24h_change<br/>• 24h_volume<br/>• last_updated"]:::gold
+        
+        G3["📊 price_summary_15min<br/>Statistical Summary<br/>• avg_price<br/>• price_volatility<br/>• volume_weighted_price<br/>• price_momentum<br/>• rsi_indicator"]:::gold
+    end
+    
+    subgraph "METRICS & KPIs"
+        M1["📏 Performance Metrics<br/>• Messages/second: ~6<br/>• Latency: <100ms<br/>• Throughput: 500k msgs/day<br/>• Storage: ~50MB/day"]:::metric
+        
+        M2["💡 Business Metrics<br/>• Price accuracy: 99.9%<br/>• Data completeness: 99.5%<br/>• Freshness: <1 minute<br/>• Availability: 99.9%"]:::metric
+        
+        M3["⚠️ Data Quality Metrics<br/>• Null rate: <0.1%<br/>• Duplicate rate: 0%<br/>• Anomaly rate: <0.5%<br/>• Gap detection: <1%"]:::metric
+    end
+    
+    subgraph "DATA RETENTION POLICY"
+        RP["📅 Retention Strategy<br/>• RAW: 30 days (compressed after 7)<br/>• OHLCV 15min: 1 year<br/>• OHLCV 1hour: 2 years<br/>• OHLCV 1day: Indefinite<br/>• Backups: 90 days"]:::metric
+    end
+    
+    %% Data Flow
+    R1 -->|"HTTP Poll"| R2
+    R2 -->|"Kafka Consumer"| B1
+    B1 -->|"DBT Extract"| S1
+    S1 -->|"Apply Rules"| S2
+    S2 -->|"Aggregate"| G1
+    S2 -->|"Latest"| G2
+    S2 -->|"Statistics"| G3
+    
+    G1 --> M2
+    G2 --> M2
+    G3 --> M2
+    
+    B1 --> M1
+    S2 --> M3
+    
+    B1 -.->|"Retention"| RP
+    G1 -.->|"Archive"| RP
+    
+    %% Annotations
+    R1 -.->|"10 sec interval"| R1
+    B1 -.->|"Exactly-once"| B1
+    S1 -.->|"Incremental"| S1
+    G1 -.->|"30 min refresh"| G1
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default'
+        });
+    </script>
+</body>
+</html>

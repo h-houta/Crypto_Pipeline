@@ -1,0 +1,236 @@
+version: '3.8'
+
+services:
+  # Infrastructure Services
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    container_name: redpanda
+    command: >
+      redpanda start
+      --overprovisioned
+      --smp 1
+      --memory 1G
+      --reserve-memory 0M
+      --check=false
+      --node-id 0
+      --kafka-addr "PLAINTEXT://0.0.0.0:9092"
+      --advertise-kafka-addr "PLAINTEXT://redpanda:9092"
+    ports:
+      - "9092:9092"
+      - "19092:19092"
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    networks:
+      - crypto-network
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    environment:
+      - REDPANDA_ENABLE_METRICS=true
+
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    container_name: postgres
+    environment:
+      POSTGRES_DB: crypto_db
+      POSTGRES_USER: crypto_user
+      POSTGRES_PASSWORD: cryptopass123
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - crypto-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crypto_user -d crypto_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    command: >
+      postgres
+      -c shared_preload_libraries=timescaledb
+      -c timescaledb.license=apache
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+
+  # Main Application Service
+  crypto-full:
+    build:
+      context: ../crypto-pipeline
+      dockerfile: ../Docker-Full-Image/Dockerfile
+      args:
+        GIT_REPO_URL: "https://github.com/h-houta/Crypto_Pipeline.git"
+        GIT_REF: "main"
+        APP_SRC: "crypto-pipeline"
+    container_name: crypto-full
+    environment:
+      # Service Configuration
+      MODE: all
+
+      # Kafka Configuration
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      KAFKA_TOPIC: crypto_prices
+      KAFKA_GROUP_ID: crypto_pipeline
+      KAFKA_AUTO_OFFSET_RESET: earliest
+
+      # PostgreSQL Configuration
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: crypto_db
+      POSTGRES_USER: crypto_user
+      POSTGRES_PASSWORD: cryptopass123
+      POSTGRES_SSL_MODE: prefer
+
+      # Alert Configuration
+      ALERT_RECIPIENTS: "test@example.com"
+      ALERT_THRESHOLD_PERCENT: "5.0"
+      ALERT_COOLDOWN_MINUTES: "15"
+
+      # Logging Configuration
+      LOG_LEVEL: INFO
+      LOG_FORMAT: json
+      PYTHONUNBUFFERED: "1"
+
+      # Performance Configuration
+      MAX_WORKERS: "4"
+      QUEUE_SIZE: "1000"
+      BUFFER_SIZE: "8192"
+
+      # Dependency Configuration
+      DEPENDENCY_TIMEOUT: "120"
+    volumes:
+      - ./logs:/logs
+      - ./certs:/app/certs:ro
+    ports:
+      - "8000:8000"  # Producer metrics
+      - "8001:8001"  # Consumer metrics
+      - "9091:9091"  # Prometheus metrics
+    networks:
+      - crypto-network
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:9091/metrics', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '1.0'
+
+  # Monitoring Stack
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--storage.tsdb.no-lockfile'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    networks:
+      - crypto-network
+    depends_on:
+      - crypto-full
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource"
+      GF_FEATURE_TOGGLES_ENABLE: "publicDashboards"
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - crypto-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Optional: Node Exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /:/host:ro,rslave
+    ports:
+      - "9100:9100"
+    networks:
+      - crypto-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  redpanda-data:
+    driver: local
+  postgres-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  crypto-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+    driver_opts:
+      com.docker.network.bridge.name: crypto-br0
