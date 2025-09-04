@@ -1,0 +1,130 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Architecture in a sentence\
+- Data flows from Coinbase via `producer/coinbase_producer.py` into Kafka/Redpanda, consumed into PostgreSQL, then transformed with DBT (`dbt_crypto`), with orchestration and monitoring via Airflow, Docker, and Grafana/Prometheus.\
+\
+Project-wide overview (high-level map)\
+- `README.md` (root): Architecture overview, quickstart, and project structure.\
+- `pyproject.toml`: Python project metadata and build/config settings.\
+- `requirements.txt` (root): Global Python dependencies for overall repo tooling.\
+- `Makefile`: Automation for setup, start, logs, tests, etc.\
+- `AI_Log.txt`: Internal log/traces from AI-assisted steps (not code).\
+- `test_install.py` / `tests/`: Lightweight tests to validate environment/setup.\
+\
+Producer ( Coinbase data source)\
+- `producer/coinbase_producer.py`\
+  - Purpose: Connects to Coinbase API, fetches price data, and publishes to Kafka topics for downstream consumption.\
+- `producer/config.py`\
+  - Purpose: Configuration for the producer (API keys, Kafka settings, poll intervals).\
+- `producer/Dockerfile`\
+  - Purpose: Builds a container image for the producer service.\
+- `producer/requirements.txt`\
+  - Purpose: Python dependencies needed by the producer.\
+- `producer/test_producer.py`\
+  - Purpose: Basic tests for producer logic (e.g., wiring, mocks).\
+- Notes: Part of the real-time data path; data is written to Kafka topics (e.g., cryptoPrices).\
+\
+Consumer ( PostgreSQL sink)\
+- `consumer/postgres_consumer.py`\
+  - Purpose: Reads messages from Kafka and writes/updates the PostgreSQL database (crypto prices).\
+- `consumer/config.py`\
+  - Purpose: Consumer configuration (Kafka bootstrap, topics, DB connection).\
+- `consumer/Dockerfile`\
+  - Purpose: Builds a container image for the consumer service.\
+- `consumer/requirements.txt`\
+  - Purpose: Python dependencies for the consumer.\
+- Notes: Targets a TimescaleDB/PostgreSQL-backed table such as `crypto_prices`.\
+\
+DBT analytics (transformations and analytics layer)\
+- `dbt_crypto/`\
+  - `dbt_project.yml`\
+    - Purpose: DBT project configuration (model paths, targets, etc.).\
+  - `profiles.yml`\
+    - Purpose: DBT connection profile (PostgreSQL/TimescaleDB).\
+  - `models/`\
+    - `staging/stg_crypto_prices.sql`\
+      - Purpose: Clean, validated staging view of raw `crypto_prices` data.\
+    - `marts/latest_crypto_prices.sql`\
+      - Purpose: Real-time snapshot per symbol with spreads.\
+    - `marts/price_summary_15min.sql`\
+      - Purpose: 15-minute aggregated stats for analysis.\
+    - `marts/crypto_ohlcv_15min.sql`\
+      - Purpose: 15-minute OHLCV candlestick data.\
+    - `schema.yml` (models/schema.yml)\
+      - Purpose: DBT schema tests and documentation for models/columns.\
+  - `README.md`\
+    - Purpose: DBT project guidance, setup, and usage.\
+  - `requirements.txt`\
+    - Purpose: DBT-related Python dependencies.\
+  - `test_dbt_setup.sh`\
+    - Purpose: Lightweight DBT setup/test bootstrap.\
+- Notes: DBT models sit in `staging/` (raw -> cleaned) and `marts/` (business-logic/aggregates).\
+\
+Airflow orchestration (scheduling and workflows)\
+- `airflow/dags/crypto_pipeline_dag.py`\
+  - Purpose: Orchestrates the streaming pipeline from producer/consumer through to DBT (health checks, DBT run/test/docs steps, data validation).\
+- `airflow/dags/crypto_streaming_dag.py`\
+  - Purpose: Manages continuous streaming health and lifecycle of streaming services (producer/consumer) via DockerOperator and health checks.\
+- `airflow/dags/crypto_dbt_dag.py`\
+  - Purpose: Orchestrates DBT transformations and data quality checks; runs DBT and generates a data-quality report.\
+- `airflow/README.md` (if present)\
+  - Purpose: Notes on Airflow setup and DAGs (not always included but often present in similar repos).\
+- Notes: These DAGs coordinate the end-to-end data flow and analytics.\
+\
+Docker/infrastructure (containers and orchestration)\
+- `docker/`\
+  - `docker-compose.yml`\
+    - Purpose: Multi-service orchestration (producer, consumer, DB, Kafka/Redpanda, monitoring, etc.).\
+  - `console-config.yml`\
+    - Purpose: Console/config for runtime dashboards/logging (likely Grafana/console).\
+  - `requirements.txt`\
+    - Purpose: Docker/container-specific Python dependencies.\
+- `docker-compose.override.yml`\
+  - Purpose: Local overrides for development environments.\
+- Notes: Core plumbing to run the full stack locally/CI.\
+\
+Database and schemas\
+- `database/init/01_schema.sql`\
+  - Purpose: SQL to initialize core database schema (e.g., `crypto_prices` table).\
+- Notes: Ground truth structure for PostgreSQL/TimescaleDB storage.\
+\
+Monitoring and observability\
+- `monitoring/`\
+  - `grafana/` (dashboards/config)\
+    - Purpose: Grafana dashboards for metrics/telemetry.\
+  - `prometheus/`\
+    - Purpose: Prometheus configuration for scraping metrics.\
+  - `monitoring/requirements.txt`\
+    - Purpose: Dependencies for monitoring stack (Grafana/Prometheus clients or exporters).\
+- `monitor.py`\
+  - Purpose: Lightweight runtime monitoring script (health or metrics checks) for the pipeline.\
+- Notes: End-to-end visibility for reliability and SLAs.\
+\
+Scripts and utilities\
+- `scripts/`\
+  - `health_check.py`\
+    - Purpose: Centralized health checks for services/components.\
+  - `scripts/setup.sh`\
+    - Purpose: Bootstrap/setup helpers for local/dev environments.\
+  - `scripts/requirements.txt`\
+    - Purpose: Dependencies for the scripts directory utilities.\
+- Notes: Lightweight tooling to bootstrap and verify the stack.\
+\
+Tests and QA\
+- `tests/`\
+  - Contents: Test suite dependencies and tests (likely for DBT, producer/consumer, or integration tests).\
+- `test_install.py`\
+  - Purpose: Quick environment sanity checks (ensures install/setup steps succeed in CI/local).\
+\
+Project-wide assets\
+- `README.md` (root)\
+  - Purpose: System overview, architecture, quickstart, and project structure (the definitive quick reference).\
+- `DBT profiles/docs` (under `dbt_crypto/`)\
+  - Purpose: Profiles for DBT connections and in-repo docs/tests.\
+- `AI_Log.txt` / `ENV`-style logs\
+  - Purpose: Operational/AI task logs (not part of the runtime code path).}
